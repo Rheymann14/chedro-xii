@@ -51,7 +51,7 @@ export function PostTimeline({ posts }: { posts: PostSummary[] }) {
                             <div className="aspect-square w-20 shrink-0 overflow-hidden rounded-md bg-accent sm:aspect-4/3 sm:w-40">
                                 {post.cover ? (
                                     <img
-                                        src={post.cover.url}
+                                        src={post.cover.thumbnail_url}
                                         alt={post.cover.alt ?? ''}
                                         loading="lazy"
                                         decoding="async"

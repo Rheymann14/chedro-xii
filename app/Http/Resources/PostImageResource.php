@@ -22,6 +22,7 @@ class PostImageResource extends JsonResource
         return [
             'id' => $this->id,
             'url' => Media::url($this->path),
+            'thumbnail_url' => Media::url($this->thumbnail_path ?? $this->path),
             'alt' => $this->alt,
             'width' => $this->width,
             'height' => $this->height,

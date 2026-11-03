@@ -5,6 +5,7 @@ namespace App\Support;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Central access to the disks that hold uploaded content, so the app can move
@@ -34,6 +35,37 @@ class Media
     public static function store(UploadedFile $file, string $directory): string
     {
         return (string) $file->store($directory, ['disk' => config('filesystems.media_disk'), 'visibility' => 'public']);
+    }
+
+    /**
+     * Optimize an image upload and store one copy per variant on the public
+     * media disk, all under the same hashed file name. An image that cannot be
+     * decoded is stored once as uploaded and shared by every variant.
+     *
+     * @param  array<string, int>  $variants  directory => longest edge in pixels
+     * @return array<string, array{path: string, width: int|null, height: int|null}>
+     */
+    public static function storeImage(UploadedFile $file, array $variants): array
+    {
+        $optimized = ImageOptimizer::optimize($file->getRealPath(), array_values($variants));
+
+        if ($optimized === null) {
+            [$width, $height] = @getimagesize($file->getRealPath()) ?: [null, null];
+            $path = static::store($file, (string) array_key_first($variants));
+
+            return array_map(fn (): array => ['path' => $path, 'width' => $width, 'height' => $height], $variants);
+        }
+
+        $name = Str::random(40).'.webp';
+        $stored = [];
+
+        foreach (array_keys($variants) as $index => $directory) {
+            $path = $directory.'/'.$name;
+            static::disk()->put($path, $optimized[$index]['contents'], 'public');
+            $stored[$directory] = ['path' => $path, 'width' => $optimized[$index]['width'], 'height' => $optimized[$index]['height']];
+        }
+
+        return $stored;
     }
 
     /**

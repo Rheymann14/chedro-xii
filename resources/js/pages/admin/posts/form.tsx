@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { useOptimizedImageInput } from '@/hooks/use-optimized-image-input';
 import { cn } from '@/lib/utils';
 import posts from '@/routes/admin/posts';
 import type { PostImage } from '@/types';
@@ -188,7 +189,7 @@ export default function PostForm({ post, defaultType, types }: Props) {
                                         label="Or upload a video"
                                         htmlFor="video"
                                         error={errors.video}
-                                        hint="MP4 or WebM, up to 100 MB. YouTube is recommended for long videos."
+                                        hint="MP4 or WebM, up to 50 MB. Use a YouTube link for anything longer than a short clip."
                                     >
                                         <Input
                                             id="video"
@@ -324,6 +325,10 @@ function ImageManager({
     const [order, setOrder] = useState(images);
     const [removed, setRemoved] = useState<number[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const { optimizing, onChange } = useOptimizedImageInput(2560, (files) => {
+        previews.forEach((url) => URL.revokeObjectURL(url));
+        setPreviews(files.map((file) => URL.createObjectURL(file)));
+    });
 
     const toggleRemoved = (id: number) =>
         setRemoved((current) =>
@@ -342,8 +347,8 @@ function ImageManager({
                 <h2 className="font-semibold">Images</h2>
                 <p className="text-xs text-muted-foreground">
                     The first image is used as the cover. Drag images to reorder
-                    them. JPG, PNG, or WebP up to 5 MB each, 10 images at most
-                    per upload.
+                    them. JPG, PNG, or WebP, 10 images at most per upload. Large
+                    photos are resized and compressed automatically.
                 </p>
             </div>
 
@@ -368,7 +373,7 @@ function ImageManager({
                             >
                                 <div className="relative aspect-video">
                                     <img
-                                        src={image.url}
+                                        src={image.thumbnail_url}
                                         alt={image.alt ?? ''}
                                         loading="lazy"
                                         className="size-full object-cover"
@@ -432,16 +437,16 @@ function ImageManager({
                     multiple
                     accept="image/jpeg,image/png,image/webp"
                     className="sr-only"
-                    onChange={(event) => {
-                        previews.forEach((url) => URL.revokeObjectURL(url));
-                        setPreviews(
-                            Array.from(event.target.files ?? []).map((file) =>
-                                URL.createObjectURL(file),
-                            ),
-                        );
-                    }}
+                    onChange={onChange}
                 />
             </label>
+
+            {optimizing && (
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Spinner />
+                    Optimizing images…
+                </p>
+            )}
 
             {previews.length > 0 && (
                 <div className="space-y-2">

@@ -31,6 +31,85 @@ test('editors can create a post with images', function () {
     Storage::disk(config('filesystems.media_disk'))->assertExists($post->images->first()->path);
 });
 
+test('large images are resized, converted to WebP, and given a thumbnail', function () {
+    Storage::fake(config('filesystems.media_disk'));
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('admin.posts.store'), [
+            'type' => PostType::Announcement->value,
+            'title' => 'Regional assembly',
+            'images' => [UploadedFile::fake()->image('assembly.jpg', 4000, 3000)],
+        ])
+        ->assertSessionHasNoErrors();
+
+    $image = Post::query()->sole()->images()->sole();
+    $disk = Storage::disk(config('filesystems.media_disk'));
+
+    expect($image)
+        ->path->toEndWith('.webp')
+        ->width->toBe(2560)
+        ->height->toBe(1920);
+    expect(getimagesizefromstring($disk->get($image->path)))
+        ->toMatchArray([0 => 2560, 1 => 1920, 'mime' => 'image/webp']);
+    expect(getimagesizefromstring($disk->get($image->thumbnail_path)))
+        ->toMatchArray([0 => 800, 1 => 600, 'mime' => 'image/webp']);
+});
+
+test('embedded photo metadata such as GPS location is removed from images', function () {
+    Storage::fake(config('filesystems.media_disk'));
+    $jpeg = UploadedFile::fake()->image('photo.jpg', 1600, 1200)->getContent();
+    $exif = "Exif\0\0II*\0\x08\0\0\0\0\0GPSLatitude 6.1164 N";
+    $jpegWithExif = substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($jpeg, 2);
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('admin.posts.store'), [
+            'type' => PostType::Announcement->value,
+            'title' => 'Field visit',
+            'images' => [UploadedFile::fake()->createWithContent('photo.jpg', $jpegWithExif)],
+        ])
+        ->assertSessionHasNoErrors();
+
+    $image = Post::query()->sole()->images()->sole();
+
+    expect(Storage::disk(config('filesystems.media_disk'))->get($image->path))
+        ->not->toContain('GPSLatitude')
+        ->not->toContain('Exif');
+});
+
+test('photos taken sideways are rotated upright using their EXIF orientation', function () {
+    Storage::fake(config('filesystems.media_disk'));
+    $jpeg = UploadedFile::fake()->image('photo.jpg', 1600, 1200)->getContent();
+    $rotateClockwise = pack('v', 1).pack('vvVv', 0x0112, 3, 1, 6)."\0\0".pack('V', 0);
+    $exif = "Exif\0\0II*\0".pack('V', 8).$rotateClockwise;
+    $jpegWithExif = substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($jpeg, 2);
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('admin.posts.store'), [
+            'type' => PostType::Announcement->value,
+            'title' => 'Campus tour',
+            'images' => [UploadedFile::fake()->createWithContent('photo.jpg', $jpegWithExif)],
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect(Post::query()->sole()->images()->sole())
+        ->width->toBe(1200)
+        ->height->toBe(1600);
+})->skip(! function_exists('exif_read_data'), 'Requires the exif extension.');
+
+test('videos larger than 50 MB are rejected', function () {
+    Storage::fake(config('filesystems.media_disk'));
+
+    $this->actingAs(User::factory()->create())
+        ->post(route('admin.posts.store'), [
+            'type' => PostType::Announcement->value,
+            'title' => 'Event highlights',
+            'video' => UploadedFile::fake()->create('highlights.mp4', 51 * 1024, 'video/mp4'),
+        ])
+        ->assertSessionHasErrors(['video' => 'The video must be 50 MB or smaller. Upload longer videos to YouTube and paste the link instead.']);
+
+    expect(Post::query()->count())->toBe(0);
+});
+
 test('the body is sanitized before it is saved', function () {
     $this->actingAs(User::factory()->create())
         ->post(route('admin.posts.store'), [

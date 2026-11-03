@@ -13,12 +13,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $post_id
  * @property string $path
+ * @property string|null $thumbnail_path
  * @property string|null $alt
  * @property int|null $width
  * @property int|null $height
  * @property int $sort_order
  */
-#[Fillable(['path', 'alt', 'width', 'height', 'sort_order'])]
+#[Fillable(['path', 'thumbnail_path', 'alt', 'width', 'height', 'sort_order'])]
 class PostImage extends Model
 {
     /** @use HasFactory<PostImageFactory> */
@@ -26,7 +27,10 @@ class PostImage extends Model
 
     protected static function booted(): void
     {
-        static::deleted(fn (PostImage $image) => Media::delete($image->path));
+        static::deleted(function (PostImage $image): void {
+            Media::delete($image->path);
+            Media::delete($image->thumbnail_path);
+        });
     }
 
     /**

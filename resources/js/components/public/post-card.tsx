@@ -38,7 +38,7 @@ export function PostCard({
             >
                 {post.cover ? (
                     <img
-                        src={post.cover.url}
+                        src={post.cover.thumbnail_url}
                         alt={post.cover.alt ?? ''}
                         width={post.cover.width ?? undefined}
                         height={post.cover.height ?? undefined}

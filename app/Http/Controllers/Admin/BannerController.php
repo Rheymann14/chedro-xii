@@ -41,7 +41,7 @@ class BannerController extends Controller
     {
         $banner = new Banner($request->safe()->except('image'));
         $banner->sort_order ??= 0;
-        $banner->image_path = Media::store($request->file('image'), 'banners');
+        $banner->image_path = Media::storeImage($request->file('image'), ['banners' => 2560])['banners']['path'];
         $banner->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Banner added.']);
@@ -74,7 +74,7 @@ class BannerController extends Controller
 
         if ($request->hasFile('image')) {
             $oldImage = $banner->image_path;
-            $banner->image_path = Media::store($request->file('image'), 'banners');
+            $banner->image_path = Media::storeImage($request->file('image'), ['banners' => 2560])['banners']['path'];
         }
 
         $banner->save();

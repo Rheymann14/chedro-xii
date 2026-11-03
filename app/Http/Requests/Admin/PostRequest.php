@@ -37,7 +37,7 @@ class PostRequest extends FormRequest
             'image_order.*' => ['integer'],
             'removed_images' => ['nullable', 'array'],
             'removed_images.*' => ['integer'],
-            'video' => ['nullable', File::types(['mp4', 'webm'])->max(100 * 1024)],
+            'video' => ['nullable', File::types(['mp4', 'webm'])->max(50 * 1024)],
             'remove_video' => ['nullable', 'boolean'],
         ];
     }
@@ -50,6 +50,7 @@ class PostRequest extends FormRequest
         return [
             'youtube_url.regex' => 'Please enter a YouTube link (youtube.com or youtu.be).',
             'images.*.max' => 'Each image must be 5 MB or smaller.',
+            'video.max' => 'The video must be 50 MB or smaller. Upload longer videos to YouTube and paste the link instead.',
         ];
     }
 

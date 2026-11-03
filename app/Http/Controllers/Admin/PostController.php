@@ -182,13 +182,14 @@ class PostController extends Controller
 
     private function storeImage(Post $post, UploadedFile $file, int $position): void
     {
-        $dimensions = @getimagesize($file->getRealPath()) ?: [null, null];
+        $stored = Media::storeImage($file, ['posts/images' => 2560, 'posts/thumbnails' => 800]);
 
         $post->images()->create([
-            'path' => Media::store($file, 'posts/images'),
+            'path' => $stored['posts/images']['path'],
+            'thumbnail_path' => $stored['posts/thumbnails']['path'],
             'alt' => $post->title,
-            'width' => $dimensions[0],
-            'height' => $dimensions[1],
+            'width' => $stored['posts/images']['width'],
+            'height' => $stored['posts/images']['height'],
             'sort_order' => $position,
         ]);
     }

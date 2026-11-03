@@ -3,6 +3,8 @@ import { AdminPage } from '@/components/admin/admin-page';
 import { FormActions } from '@/components/admin/form-actions';
 import { CheckboxField, FormField } from '@/components/admin/form-field';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { useOptimizedImageInput } from '@/hooks/use-optimized-image-input';
 import banners from '@/routes/admin/banners';
 
 type Props = {
@@ -21,6 +23,7 @@ type Props = {
 
 export default function BannerForm({ banner }: Props) {
     const title = banner ? 'Edit banner' : 'Add banner';
+    const { optimizing, onChange } = useOptimizedImageInput(2560);
 
     return (
         <>
@@ -47,7 +50,7 @@ export default function BannerForm({ banner }: Props) {
                                 htmlFor="image"
                                 error={errors.image}
                                 required={!banner}
-                                hint="JPG, PNG, or WebP, at least 1200 pixels wide (2048 × 800 recommended), up to 5 MB."
+                                hint="JPG, PNG, or WebP, at least 1200 pixels wide (2048 × 800 recommended). Large images are resized and compressed automatically."
                             >
                                 <Input
                                     id="image"
@@ -55,7 +58,14 @@ export default function BannerForm({ banner }: Props) {
                                     type="file"
                                     required={!banner}
                                     accept="image/jpeg,image/png,image/webp"
+                                    onChange={onChange}
                                 />
+                                {optimizing && (
+                                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Spinner />
+                                        Optimizing image…
+                                    </p>
+                                )}
                             </FormField>
 
                             <FormField

@@ -62,6 +62,7 @@ export type PostTypeValue = 'announcement' | 'career' | 'award';
 export type PostImage = {
     id: number;
     url: string;
+    thumbnail_url: string;
     alt: string | null;
     width: number | null;
     height: number | null;
