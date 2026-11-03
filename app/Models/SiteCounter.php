@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * Named running totals, such as the public visitor count.
+ * Named running totals, such as the visitor count of each public page.
  *
  * @property int $id
  * @property string $key
@@ -23,7 +23,13 @@ class SiteCounter extends Model
     /** @use HasFactory<SiteCounterFactory> */
     use HasFactory;
 
-    public const VISITORS = 'visitors';
+    /**
+     * Key of the visitor counter for a page path, such as "/announcements".
+     */
+    public static function pageVisitorsKey(string $path): string
+    {
+        return 'page-visitors:'.$path;
+    }
 
     /**
      * @return array<string, string>

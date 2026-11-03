@@ -2,18 +2,23 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\SiteCounter;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Counts each public browsing session once for the footer visitor count.
- * Staff, crawlers, and non-page requests are not counted.
+ * Remembers which public pages were served to a browsing session, so the
+ * footer may count one visit per page and session. Prefetches are included
+ * because a prefetched page is later shown from the browser cache. Staff,
+ * crawlers, and non-page responses are not remembered.
  */
 class TrackVisitor
 {
-    private const SESSION_KEY = 'visitor_counted';
+    /**
+     * Session key holding served page paths, each mapped to whether its visit
+     * was already counted.
+     */
+    public const SESSION_KEY = 'page_views';
 
     private const BOT_PATTERN = '/bot|crawl|spider|slurp|facebookexternalhit|preview|monitor|curl|wget|python|headless/i';
 
@@ -24,21 +29,33 @@ class TrackVisitor
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($this->shouldCount($request)) {
-            $request->session()->put(self::SESSION_KEY, true);
-            SiteCounter::bump(SiteCounter::VISITORS);
+        $response = $next($request);
+
+        if ($this->isCountablePage($request, $response)) {
+            $servedPages = $request->session()->get(self::SESSION_KEY, []);
+            $servedPages[self::pathOf($request)] ??= false;
+
+            $request->session()->put(self::SESSION_KEY, $servedPages);
         }
 
-        return $next($request);
+        return $response;
     }
 
-    private function shouldCount(Request $request): bool
+    /**
+     * The request path with a leading slash, such as "/" or "/announcements".
+     */
+    public static function pathOf(Request $request): string
+    {
+        return '/'.ltrim($request->path(), '/');
+    }
+
+    private function isCountablePage(Request $request, Response $response): bool
     {
         return $request->isMethod('GET')
-            && ! $request->expectsJson()
+            && $response->isSuccessful()
+            && ($response->headers->has('X-Inertia') || str_contains((string) $response->headers->get('Content-Type'), 'text/html'))
             && $request->user() === null
             && ! $request->is('admin', 'admin/*', 'login', 'settings/*')
-            && ! $request->session()->has(self::SESSION_KEY)
             && preg_match(self::BOT_PATTERN, (string) $request->userAgent()) !== 1;
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\HubController;
 use App\Http\Controllers\IssuanceController;
 use App\Http\Controllers\IssuanceFileController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PageViewController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
@@ -46,6 +47,7 @@ Route::get('contact', [ContactController::class, 'show'])->name('contact.show');
 Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 
 Route::get('calendar', CalendarController::class)->middleware('throttle:60,1')->name('calendar');
+Route::post('page-views', PageViewController::class)->middleware('throttle:60,1')->name('page-views.store');
 Route::get('search', SearchController::class)->name('search');
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 

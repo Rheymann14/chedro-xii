@@ -1,8 +1,10 @@
-import { usePage } from '@inertiajs/react';
+import { useHttp, usePage } from '@inertiajs/react';
 import { Mail, MapPin, Phone } from 'lucide-react';
+import { useEffect } from 'react';
 import { FacebookIcon } from '@/components/public/facebook-icon';
 import { SmartLink } from '@/components/public/smart-link';
 import { formatDate } from '@/lib/format';
+import { store as storePageView } from '@/routes/page-views';
 import type { MenuLink } from '@/types';
 
 const governmentLinks: [string, string][] = [
@@ -15,13 +17,26 @@ const governmentLinks: [string, string][] = [
 
 const numberFormatter = new Intl.NumberFormat('en-PH');
 
+type PageVisitors = { count: number; since: string | null };
+
 /**
  * Footer in the style of ched.gov.ph: a white band with the seals and the
- * visitor count, followed by a dark navy block with agency links.
+ * current page's visitor count, followed by a dark navy block with agency
+ * links. The count is requested on every navigation, including pages shown
+ * from the prefetch cache, which never reach the server otherwise.
  */
 export function SiteFooter() {
-    const { site } = usePage().props;
-    const { settings, menus, visitors } = site;
+    const { props, url } = usePage();
+    const { settings, menus } = props.site;
+    const path = url.split(/[?#]/)[0];
+    const http = useHttp<{ path: string }, PageVisitors>({ path });
+    const visitors = http.response;
+
+    useEffect(() => {
+        http.transform(() => ({ path }));
+        void http.post(storePageView.url()).catch(() => undefined);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [path]);
 
     return (
         <footer className="mt-auto">
@@ -49,7 +64,7 @@ export function SiteFooter() {
                         <p className="text-2xl font-bold text-foreground">
                             Visitor Count
                         </p>
-                        {visitors.since && (
+                        {visitors?.since && (
                             <p className="text-sm text-muted-foreground">
                                 since {formatDate(visitors.since)}
                             </p>
@@ -58,9 +73,13 @@ export function SiteFooter() {
                             className="mx-auto my-3 block h-1 w-12 bg-flag-red sm:mx-0"
                             aria-hidden
                         />
-                        <p className="text-xl font-bold text-foreground tabular-nums">
-                            {numberFormatter.format(visitors.count)}
-                        </p>
+                        {visitors ? (
+                            <p className="text-xl font-bold text-foreground tabular-nums">
+                                {numberFormatter.format(visitors.count)}
+                            </p>
+                        ) : (
+                            <div className="mx-auto h-7 w-16 animate-pulse rounded-md bg-muted sm:mx-0" />
+                        )}
                     </div>
                 </div>
             </div>

@@ -28,7 +28,6 @@ export type SiteSettings = {
 export type Site = {
     settings: SiteSettings;
     menus: SiteMenus;
-    visitors: { count: number; since: string | null };
 };
 
 export type PaginationLink = {
