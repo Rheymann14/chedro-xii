@@ -49,5 +49,7 @@ Route::get('calendar', CalendarController::class)->middleware('throttle:60,1')->
 Route::get('search', SearchController::class)->name('search');
 Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
 
+Route::get('session/keep-alive', fn () => response()->noContent())->middleware('auth')->name('session.keep-alive');
+
 require __DIR__.'/admin.php';
 require __DIR__.'/settings.php';

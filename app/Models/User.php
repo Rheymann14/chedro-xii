@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -68,6 +69,22 @@ class User extends Authenticatable
         return $this->isAdmin()
             && $this->is_active
             && static::query()->activeAdmins()->whereKeyNot($this->getKey())->doesntExist();
+    }
+
+    /**
+     * Whether this user is still signed in on another device (database session driver only).
+     */
+    public function hasActiveSession(): bool
+    {
+        if (config('session.driver') !== 'database') {
+            return false;
+        }
+
+        return DB::connection(config('session.connection'))
+            ->table(config('session.table', 'sessions'))
+            ->where('user_id', $this->getKey())
+            ->where('last_activity', '>=', now()->subMinutes((int) config('session.lifetime'))->getTimestamp())
+            ->exists();
     }
 
     /**

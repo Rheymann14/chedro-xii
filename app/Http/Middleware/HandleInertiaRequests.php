@@ -44,6 +44,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => fn () => $request->user()?->only('id', 'name', 'email', 'role'),
+                'idleTimeoutMinutes' => (int) config('session.lifetime'),
             ],
             'site' => fn (): array => [
                 'settings' => SiteSettings::all(),

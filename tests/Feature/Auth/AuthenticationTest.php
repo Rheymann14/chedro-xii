@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 test('login screen can be rendered', function () {
@@ -53,6 +54,44 @@ test('users deactivated during a session are signed out', function () {
     $this->assertGuest();
 });
 
+test('users signed in on another device can not authenticate again', function () {
+    config(['session.driver' => 'database']);
+    $user = User::factory()->create();
+
+    DB::table('sessions')->insert([
+        'id' => 'other-device-session',
+        'user_id' => $user->id,
+        'payload' => '',
+        'last_activity' => now()->getTimestamp(),
+    ]);
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+});
+
+test('users whose other session has expired can authenticate', function () {
+    config(['session.driver' => 'database']);
+    $user = User::factory()->create();
+
+    DB::table('sessions')->insert([
+        'id' => 'expired-session',
+        'user_id' => $user->id,
+        'payload' => '',
+        'last_activity' => now()->subMinutes(config('session.lifetime') + 1)->getTimestamp(),
+    ]);
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user);
+});
+
 test('users can logout', function () {
     $user = User::factory()->create();
 
@@ -74,4 +113,13 @@ test('users are rate limited', function () {
     ]);
 
     $response->assertTooManyRequests();
+});
+
+test('login attempts are rate limited per ip across different emails', function () {
+    RateLimiter::increment(md5('login'.'ip|127.0.0.1'), amount: 20);
+
+    $this->post(route('login.store'), [
+        'email' => 'someone-else@example.com',
+        'password' => 'wrong-password',
+    ])->assertTooManyRequests();
 });

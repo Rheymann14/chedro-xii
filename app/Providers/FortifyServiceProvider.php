@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Fortify;
 
@@ -48,6 +49,12 @@ class FortifyServiceProvider extends ServiceProvider
                 return null;
             }
 
+            if ($user->hasActiveSession()) {
+                throw ValidationException::withMessages([
+                    Fortify::username() => 'This account is already signed in on another device. Sign out there first.',
+                ]);
+            }
+
             return $user;
         });
     }
@@ -79,12 +86,13 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureRateLimiting(): void
     {
-
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
 
-            return Limit::perMinute(5)->by($throttleKey);
+            return [
+                Limit::perMinute(5)->by($throttleKey),
+                Limit::perMinute(20)->by('ip|'.$request->ip()),
+            ];
         });
-
     }
 }
