@@ -1,9 +1,34 @@
+import {
+    closestCenter,
+    DndContext,
+    KeyboardSensor,
+    PointerSensor,
+    pointerWithin,
+    useDroppable,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import type {
+    CollisionDetection,
+    DragEndEvent,
+    DragOverEvent,
+    DragStartEvent,
+    UniqueIdentifier,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Form, Head, router } from '@inertiajs/react';
-import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { ExternalLink, Pencil, Plus } from 'lucide-react';
+import { useId, useState } from 'react';
+import type { ReactNode } from 'react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { ConfirmDelete } from '@/components/admin/confirm-delete';
 import { CheckboxField, FormField } from '@/components/admin/form-field';
+import { DragHandle, SortableItem } from '@/components/admin/sortable-list';
 import { Combobox } from '@/components/combobox';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,6 +60,8 @@ type Menu = {
     items: AdminMenuItem[];
 };
 
+type ChildGroups = Record<number, AdminMenuItem[]>;
+
 type Editing = {
     item: AdminMenuItem | null;
     menu: string;
@@ -46,13 +73,6 @@ export default function MenusIndex({ menus }: { menus: Menu[] }) {
     const [editing, setEditing] = useState<Editing | null>(null);
     const menu =
         menus.find((candidate) => candidate.value === active) ?? menus[0];
-
-    const move = (item: AdminMenuItem, direction: 'up' | 'down') =>
-        router.post(
-            menuItems.move.url(item.id),
-            { direction },
-            { preserveScroll: true },
-        );
 
     return (
         <>
@@ -98,72 +118,13 @@ export default function MenusIndex({ menus }: { menus: Menu[] }) {
                     ))}
                 </div>
 
-                <ul className="space-y-3">
-                    {menu.items.map((item, index) => (
-                        <li
-                            key={item.id}
-                            className="rounded-xl border bg-card shadow-xs"
-                        >
-                            <MenuRow
-                                item={item}
-                                isFirst={index === 0}
-                                isLast={index === menu.items.length - 1}
-                                onMove={move}
-                                onEdit={() =>
-                                    setEditing({
-                                        item,
-                                        menu: menu.value,
-                                        parentId: null,
-                                    })
-                                }
-                            />
-                            {(item.children ?? []).length > 0 && (
-                                <ul className="divide-y border-t bg-muted/30 pl-6">
-                                    {(item.children ?? []).map(
-                                        (child, childIndex, children) => (
-                                            <li key={child.id}>
-                                                <MenuRow
-                                                    item={child}
-                                                    isFirst={childIndex === 0}
-                                                    isLast={
-                                                        childIndex ===
-                                                        children.length - 1
-                                                    }
-                                                    onMove={move}
-                                                    onEdit={() =>
-                                                        setEditing({
-                                                            item: child,
-                                                            menu: menu.value,
-                                                            parentId: item.id,
-                                                        })
-                                                    }
-                                                />
-                                            </li>
-                                        ),
-                                    )}
-                                </ul>
-                            )}
-                            {menu.value === 'header' && (
-                                <div className="border-t px-3 py-2">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                            setEditing({
-                                                item: null,
-                                                menu: menu.value,
-                                                parentId: item.id,
-                                            })
-                                        }
-                                    >
-                                        <Plus className="size-4" />
-                                        Add link under “{item.label}”
-                                    </Button>
-                                </div>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                <MenuTree
+                    key={menu.value}
+                    menu={menu}
+                    onEdit={(item, parentId) =>
+                        setEditing({ item, menu: menu.value, parentId })
+                    }
+                />
             </AdminPage>
 
             <Dialog
@@ -189,21 +150,335 @@ export default function MenusIndex({ menus }: { menus: Menu[] }) {
     );
 }
 
+/**
+ * Drag-and-drop list of a menu's links. Top-level links reorder among
+ * themselves; child links can also be dragged under another top-level link.
+ */
+function MenuTree({
+    menu,
+    onEdit,
+}: {
+    menu: Menu;
+    onEdit: (item: AdminMenuItem | null, parentId: number | null) => void;
+}) {
+    const id = useId();
+    const canNest = menu.value === 'header';
+    const [dragGroups, setDragGroups] = useState<ChildGroups | null>(null);
+    const groups = dragGroups ?? childGroupsOf(menu.items);
+    const topLevelIds = menu.items.map((item) => item.id);
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        }),
+    );
+
+    const isTopLevel = (target: UniqueIdentifier) =>
+        typeof target === 'number' && topLevelIds.includes(target);
+
+    const collisionDetection: CollisionDetection = (args) => {
+        const draggingTopLevel = isTopLevel(args.active.id);
+        const droppableContainers = args.droppableContainers.filter(
+            (container) => isTopLevel(container.id) === draggingTopLevel,
+        );
+
+        if (!draggingTopLevel) {
+            const within = pointerWithin({ ...args, droppableContainers });
+            const overLinks = within.filter(
+                (collision) => typeof collision.id === 'number',
+            );
+
+            if (overLinks.length > 0) {
+                return overLinks;
+            }
+
+            if (within.length > 0) {
+                return within;
+            }
+        }
+
+        return closestCenter({ ...args, droppableContainers });
+    };
+
+    const save = (
+        item: AdminMenuItem,
+        position: number,
+        reorder: (items: AdminMenuItem[]) => AdminMenuItem[],
+        parentId?: number,
+    ) =>
+        router
+            .optimistic<{ menus: Menu[] }>((props) => ({
+                menus: props.menus.map((candidate) =>
+                    candidate.value === menu.value
+                        ? { ...candidate, items: reorder(candidate.items) }
+                        : candidate,
+                ),
+            }))
+            .post(
+                menuItems.move.url(item.id),
+                parentId === undefined
+                    ? { position }
+                    : { position, parent_id: parentId },
+                { preserveScroll: true },
+            );
+
+    const handleDragStart = ({ active }: DragStartEvent) => {
+        if (!isTopLevel(active.id)) {
+            setDragGroups(childGroupsOf(menu.items));
+        }
+    };
+
+    const handleDragOver = ({ active, over }: DragOverEvent) => {
+        if (!over || !dragGroups) {
+            return;
+        }
+
+        const from = parentOf(active.id, dragGroups);
+        const to = parentOf(over.id, dragGroups);
+
+        if (from === null || to === null || from === to) {
+            return;
+        }
+
+        const moving = dragGroups[from].find((child) => child.id === active.id);
+
+        if (!moving) {
+            return;
+        }
+
+        const target = dragGroups[to];
+        const overIndex = target.findIndex((child) => child.id === over.id);
+        const insertAt = overIndex === -1 ? target.length : overIndex;
+
+        setDragGroups({
+            ...dragGroups,
+            [from]: dragGroups[from].filter((child) => child.id !== active.id),
+            [to]: [
+                ...target.slice(0, insertAt),
+                { ...moving, parent_id: to },
+                ...target.slice(insertAt),
+            ],
+        });
+    };
+
+    const handleDragEnd = ({ active, over }: DragEndEvent) => {
+        const finalGroups = dragGroups;
+        setDragGroups(null);
+
+        if (!over) {
+            return;
+        }
+
+        if (isTopLevel(active.id)) {
+            const from = topLevelIds.indexOf(Number(active.id));
+            const to = topLevelIds.indexOf(Number(over.id));
+
+            if (from === -1 || to === -1 || from === to) {
+                return;
+            }
+
+            const reordered = arrayMove(menu.items, from, to);
+            save(menu.items[from], to, () => reordered);
+
+            return;
+        }
+
+        if (!finalGroups) {
+            return;
+        }
+
+        const parentId = parentOf(active.id, finalGroups);
+        const original = menu.items
+            .flatMap((item) => item.children ?? [])
+            .find((child) => child.id === active.id);
+
+        if (parentId === null || !original) {
+            return;
+        }
+
+        const siblings = finalGroups[parentId];
+        const from = siblings.findIndex((child) => child.id === active.id);
+        const overIndex = siblings.findIndex((child) => child.id === over.id);
+        const reordered =
+            overIndex === -1 || overIndex === from
+                ? siblings
+                : arrayMove(siblings, from, overIndex);
+        const position = reordered.findIndex((child) => child.id === active.id);
+        const originalPosition = (
+            childGroupsOf(menu.items)[original.parent_id ?? -1] ?? []
+        ).findIndex((child) => child.id === original.id);
+
+        if (original.parent_id === parentId && originalPosition === position) {
+            return;
+        }
+
+        const nextGroups = { ...finalGroups, [parentId]: reordered };
+
+        save(
+            original,
+            position,
+            (items) =>
+                items.map((item) => ({
+                    ...item,
+                    children: nextGroups[item.id] ?? item.children,
+                })),
+            parentId,
+        );
+    };
+
+    return (
+        <DndContext
+            id={id}
+            sensors={sensors}
+            collisionDetection={collisionDetection}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+            onDragCancel={() => setDragGroups(null)}
+        >
+            <SortableContext
+                items={topLevelIds}
+                strategy={verticalListSortingStrategy}
+            >
+                <ul className="space-y-3">
+                    {menu.items.map((item) => {
+                        const children = groups[item.id] ?? [];
+
+                        return (
+                            <SortableItem
+                                key={item.id}
+                                id={item.id}
+                                className="rounded-xl border bg-card shadow-xs"
+                            >
+                                <ChildDropZone
+                                    parentId={item.id}
+                                    disabled={!canNest}
+                                    highlight={dragGroups !== null}
+                                >
+                                    <MenuRow
+                                        item={item}
+                                        onEdit={() => onEdit(item, null)}
+                                    />
+                                    <SortableContext
+                                        items={children.map(
+                                            (child) => child.id,
+                                        )}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        {children.length > 0 && (
+                                            <ul className="divide-y border-t bg-muted/30 pl-6">
+                                                {children.map((child) => (
+                                                    <SortableItem
+                                                        key={child.id}
+                                                        id={child.id}
+                                                    >
+                                                        <MenuRow
+                                                            item={child}
+                                                            onEdit={() =>
+                                                                onEdit(
+                                                                    child,
+                                                                    item.id,
+                                                                )
+                                                            }
+                                                        />
+                                                    </SortableItem>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </SortableContext>
+                                    {canNest && (
+                                        <div className="border-t px-3 py-2">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() =>
+                                                    onEdit(null, item.id)
+                                                }
+                                            >
+                                                <Plus className="size-4" />
+                                                Add link under “{item.label}”
+                                            </Button>
+                                        </div>
+                                    )}
+                                </ChildDropZone>
+                            </SortableItem>
+                        );
+                    })}
+                </ul>
+            </SortableContext>
+        </DndContext>
+    );
+}
+
+/**
+ * Makes a whole top-level card a drop target for child links, so a link can
+ * be dropped under a parent that has no children yet.
+ */
+function ChildDropZone({
+    parentId,
+    disabled,
+    highlight,
+    children,
+}: {
+    parentId: number;
+    disabled: boolean;
+    highlight: boolean;
+    children: ReactNode;
+}) {
+    const { setNodeRef, isOver } = useDroppable({
+        id: `parent-${parentId}`,
+        disabled,
+    });
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={cn(
+                'rounded-xl transition-colors',
+                highlight && isOver && 'bg-primary/5 ring-2 ring-primary/30',
+            )}
+        >
+            {children}
+        </div>
+    );
+}
+
+function childGroupsOf(items: AdminMenuItem[]): ChildGroups {
+    return Object.fromEntries(
+        items.map((item) => [item.id, item.children ?? []]),
+    );
+}
+
+/**
+ * The top-level link a dragged child or drop target belongs to.
+ */
+function parentOf(
+    target: UniqueIdentifier,
+    groups: ChildGroups,
+): number | null {
+    if (typeof target === 'string') {
+        return target.startsWith('parent-')
+            ? Number(target.slice('parent-'.length))
+            : null;
+    }
+
+    const entry = Object.entries(groups).find(([, children]) =>
+        children.some((child) => child.id === target),
+    );
+
+    return entry ? Number(entry[0]) : null;
+}
+
 function MenuRow({
     item,
-    isFirst,
-    isLast,
-    onMove,
     onEdit,
 }: {
     item: AdminMenuItem;
-    isFirst: boolean;
-    isLast: boolean;
-    onMove: (item: AdminMenuItem, direction: 'up' | 'down') => void;
     onEdit: () => void;
 }) {
     return (
-        <div className="flex items-center gap-2 p-2 pl-4">
+        <div className="flex items-center gap-2 p-2">
+            <DragHandle label={`Drag to reorder “${item.label}”`} />
             <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 font-medium">
                     {item.label}
@@ -218,24 +493,6 @@ function MenuRow({
                     {item.url}
                 </p>
             </div>
-            <Button
-                variant="ghost"
-                size="icon"
-                disabled={isFirst}
-                onClick={() => onMove(item, 'up')}
-                aria-label="Move up"
-            >
-                <ArrowUp className="size-4" />
-            </Button>
-            <Button
-                variant="ghost"
-                size="icon"
-                disabled={isLast}
-                onClick={() => onMove(item, 'down')}
-                aria-label="Move down"
-            >
-                <ArrowDown className="size-4" />
-            </Button>
             <Button
                 variant="ghost"
                 size="icon"

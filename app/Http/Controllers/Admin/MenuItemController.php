@@ -63,38 +63,55 @@ class MenuItemController extends Controller
     }
 
     /**
-     * Move an item one position up or down among its siblings.
+     * Move an item to a new zero-based position among its siblings, optionally
+     * under a different top-level parent (child links only).
      */
     public function move(Request $request, MenuItem $menuItem): RedirectResponse
     {
-        $direction = $request->validate(['direction' => ['required', Rule::in(['up', 'down'])]])['direction'];
+        $data = $request->validate([
+            'position' => ['required', 'integer', 'min:0'],
+            'parent_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::prohibitedIf($menuItem->parent_id === null),
+                Rule::exists('menu_items', 'id')->whereNull('parent_id')->where('menu', $menuItem->menu->value),
+                Rule::notIn([$menuItem->id]),
+            ],
+        ], [
+            'parent_id.prohibited' => 'Top-level links cannot be moved under another link.',
+            'parent_id.exists' => 'The parent must be a top-level item in the same menu.',
+        ]);
 
-        DB::transaction(function () use ($menuItem, $direction): void {
+        $position = (int) $data['position'];
+        $parentId = array_key_exists('parent_id', $data) ? $data['parent_id'] : $menuItem->parent_id;
+
+        DB::transaction(function () use ($menuItem, $position, $parentId): void {
+            $menuItem->parent_id = $parentId;
+
             $siblings = MenuItem::query()
                 ->where('menu', $menuItem->menu)
-                ->where('parent_id', $menuItem->parent_id)
+                ->where('parent_id', $parentId)
                 ->orderBy('sort_order')
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get()
-                ->values();
+                ->reject(fn (MenuItem $item): bool => $item->is($menuItem))
+                ->values()
+                ->all();
 
-            $index = $siblings->search(fn (MenuItem $item) => $item->is($menuItem));
-            $swapWith = $direction === 'up' ? $index - 1 : $index + 1;
+            array_splice($siblings, min($position, count($siblings)), 0, [$menuItem]);
 
-            if ($index === false || ! $siblings->has($swapWith)) {
-                return;
-            }
+            foreach ($siblings as $index => $item) {
+                $item->sort_order = $index;
 
-            $ordered = $siblings->all();
-            [$ordered[$index], $ordered[$swapWith]] = [$ordered[$swapWith], $ordered[$index]];
-
-            foreach ($ordered as $position => $item) {
-                if ($item->sort_order !== $position) {
-                    $item->update(['sort_order' => $position]);
+                if ($item->isDirty()) {
+                    $item->save();
                 }
             }
         });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Menu order saved.']);
 
         return back();
     }

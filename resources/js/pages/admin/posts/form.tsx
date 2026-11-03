@@ -1,17 +1,15 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ArrowRight,
-    ExternalLink,
-    ImagePlus,
-    Trash2,
-    Undo2,
-} from 'lucide-react';
+import { ExternalLink, ImagePlus, Trash2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { ConfirmDelete } from '@/components/admin/confirm-delete';
 import { FormField } from '@/components/admin/form-field';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import {
+    DragHandle,
+    SortableItem,
+    SortableList,
+} from '@/components/admin/sortable-list';
 import { Combobox } from '@/components/combobox';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -327,18 +325,6 @@ function ImageManager({
     const [removed, setRemoved] = useState<number[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
 
-    const move = (index: number, offset: number) => {
-        const next = [...order];
-        const target = index + offset;
-
-        if (target < 0 || target >= next.length) {
-            return;
-        }
-
-        [next[index], next[target]] = [next[target], next[index]];
-        setOrder(next);
-    };
-
     const toggleRemoved = (id: number) =>
         setRemoved((current) =>
             current.includes(id)
@@ -355,19 +341,26 @@ function ImageManager({
             <div>
                 <h2 className="font-semibold">Images</h2>
                 <p className="text-xs text-muted-foreground">
-                    The first image is used as the cover. JPG, PNG, or WebP up
-                    to 5 MB each, 10 images at most per upload.
+                    The first image is used as the cover. Drag images to reorder
+                    them. JPG, PNG, or WebP up to 5 MB each, 10 images at most
+                    per upload.
                 </p>
             </div>
 
             {order.length > 0 && (
-                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                <SortableList
+                    items={order}
+                    onReorder={setOrder}
+                    layout="grid"
+                    className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+                >
                     {order.map((image, index) => {
                         const isRemoved = removed.includes(image.id);
 
                         return (
-                            <li
+                            <SortableItem
                                 key={image.id}
+                                id={image.id}
                                 className={cn(
                                     'overflow-hidden rounded-lg border bg-muted',
                                     isRemoved && 'opacity-40',
@@ -387,24 +380,7 @@ function ImageManager({
                                     )}
                                 </div>
                                 <div className="flex items-center justify-between bg-card p-1">
-                                    <div className="flex">
-                                        <IconButton
-                                            label="Move left"
-                                            onClick={() => move(index, -1)}
-                                            disabled={index === 0}
-                                        >
-                                            <ArrowLeft className="size-4" />
-                                        </IconButton>
-                                        <IconButton
-                                            label="Move right"
-                                            onClick={() => move(index, 1)}
-                                            disabled={
-                                                index === order.length - 1
-                                            }
-                                        >
-                                            <ArrowRight className="size-4" />
-                                        </IconButton>
-                                    </div>
+                                    <DragHandle label="Drag to reorder image" />
                                     <IconButton
                                         label={
                                             isRemoved
@@ -432,10 +408,10 @@ function ImageManager({
                                         value={image.id}
                                     />
                                 )}
-                            </li>
+                            </SortableItem>
                         );
                     })}
-                </ul>
+                </SortableList>
             )}
 
             <label
@@ -501,22 +477,19 @@ function ImageManager({
 function IconButton({
     label,
     onClick,
-    disabled = false,
     children,
 }: {
     label: string;
     onClick: () => void;
-    disabled?: boolean;
     children: React.ReactNode;
 }) {
     return (
         <button
             type="button"
             onClick={onClick}
-            disabled={disabled}
             aria-label={label}
             title={label}
-            className="grid size-8 place-items-center rounded hover:bg-accent disabled:opacity-30"
+            className="grid size-8 place-items-center rounded hover:bg-accent"
         >
             {children}
         </button>
