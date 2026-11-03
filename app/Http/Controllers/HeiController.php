@@ -49,9 +49,11 @@ class HeiController extends Controller
                 'type' => $filters['type'] ?? '',
                 'province' => $filters['province'] ?? '',
             ],
-            'types' => $all->pluck('type')->filter()->unique()->sort()->values(),
+            'types' => PortalService::TYPES,
             'provinces' => $all->pluck('province')->filter()->unique()->sort()->values(),
             'total' => $all->count(),
+            'counts' => collect(PortalService::TYPES)
+                ->mapWithKeys(fn (string $type): array => [$type => $all->where('type', $type)->count()]),
         ]);
     }
 
@@ -89,9 +91,9 @@ class HeiController extends Controller
     }
 
     /**
-     * @param  Collection<int, array{code: string|null, name: string, type: string|null, province: string|null, city: string|null, address: string|null}>  $institutions
+     * @param  Collection<int, array{code: string|null, name: string, type: string|null, ownership: string|null, province: string|null, city: string|null, address: string|null}>  $institutions
      * @param  array{q?: string|null, type?: string|null, province?: string|null}  $filters
-     * @return Collection<int, array{code: string|null, name: string, type: string|null, province: string|null, city: string|null, address: string|null}>
+     * @return Collection<int, array{code: string|null, name: string, type: string|null, ownership: string|null, province: string|null, city: string|null, address: string|null}>
      */
     private function applyFilters(Collection $institutions, array $filters): Collection
     {
@@ -113,7 +115,7 @@ class HeiController extends Controller
                     return true;
                 }
 
-                $haystack = implode(' ', array_filter([$item['name'], $item['city'], $item['province'], $item['type']]));
+                $haystack = implode(' ', array_filter([$item['code'], $item['name'], $item['city'], $item['province'], $item['type'], $item['ownership']]));
 
                 return str_contains(mb_strtolower($haystack), $term);
             })
@@ -121,17 +123,17 @@ class HeiController extends Controller
     }
 
     /**
-     * @param  Collection<int, array{code: string|null, name: string, type: string|null, province: string|null, city: string|null, address: string|null}>  $rows
+     * @param  Collection<int, array{code: string|null, name: string, type: string|null, ownership: string|null, province: string|null, city: string|null, address: string|null}>  $rows
      */
     private function xlsx(Collection $rows, string $fileName): StreamedResponse
     {
         return response()->streamDownload(function () use ($rows): void {
             $writer = new Writer;
             $writer->openToFile('php://output');
-            $writer->addRow(Row::fromValuesWithStyle(['Institution', 'Type', 'City / Municipality', 'Province', 'Address'], (new Style)->withFontBold(true)));
+            $writer->addRow(Row::fromValuesWithStyle(['UII', 'Institution', 'Type', 'Ownership', 'City / Municipality', 'Province', 'Address'], (new Style)->withFontBold(true)));
 
             foreach ($rows as $row) {
-                $writer->addRow(Row::fromValues([$row['name'], $row['type'] ?? '', $row['city'] ?? '', $row['province'] ?? '', $row['address'] ?? '']));
+                $writer->addRow(Row::fromValues([$row['code'] ?? '', $row['name'], $row['type'] ?? '', $row['ownership'] ?? '', $row['city'] ?? '', $row['province'] ?? '', $row['address'] ?? '']));
             }
 
             $writer->close();

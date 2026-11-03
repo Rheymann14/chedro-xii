@@ -27,16 +27,18 @@
         <thead>
             <tr>
                 <th style="width: 4%">#</th>
+                <th style="width: 8%">UII</th>
                 <th style="width: 34%">Institution</th>
-                <th style="width: 18%">Type</th>
+                <th style="width: 16%">Type</th>
                 <th style="width: 18%">City / Municipality</th>
-                <th style="width: 26%">Province</th>
+                <th style="width: 20%">Province</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($institutions as $institution)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
+                    <td>{{ $institution['code'] ?? '—' }}</td>
                     <td>{{ $institution['name'] }}</td>
                     <td>{{ $institution['type'] ?? '—' }}</td>
                     <td>{{ $institution['city'] ?? '—' }}</td>

@@ -39,6 +39,7 @@ return [
         'url' => env('PORTAL_API_URL', 'https://portal.chedro12.com/api'),
         'key' => env('PORTAL_API_KEY'),
         'timeout' => (int) env('PORTAL_API_TIMEOUT', 10),
+        'ca_bundle' => env('PORTAL_CA_BUNDLE'),
     ],
 
 ];
