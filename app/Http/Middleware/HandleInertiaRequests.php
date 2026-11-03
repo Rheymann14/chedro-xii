@@ -2,6 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\MenuLocation;
+use App\Models\SiteCounter;
+use App\Support\SiteMenus;
+use App\Support\SiteSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,9 +43,31 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => fn () => $request->user()?->only('id', 'name', 'email', 'role'),
+            ],
+            'site' => fn (): array => [
+                'settings' => SiteSettings::all(),
+                'menus' => [
+                    'header' => SiteMenus::for(MenuLocation::Header),
+                    'quick_links' => SiteMenus::for(MenuLocation::QuickLinks),
+                    'footer' => SiteMenus::for(MenuLocation::Footer),
+                ],
+                'visitors' => $this->visitors(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * @return array{count: int, since: string|null}
+     */
+    private function visitors(): array
+    {
+        $counter = SiteCounter::query()->where('key', SiteCounter::VISITORS)->first(['value', 'created_at']);
+
+        return [
+            'count' => $counter->value ?? 0,
+            'since' => $counter?->created_at?->toDateString(),
         ];
     }
 }

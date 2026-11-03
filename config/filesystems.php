@@ -17,6 +17,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Media Disks
+    |--------------------------------------------------------------------------
+    |
+    | Uploaded content (post images, issuances, downloads, banners) is stored
+    | on the "media" disk. Staff-only files go to the "private media" disk,
+    | which must never be publicly readable. Switch both to an S3-compatible
+    | bucket disk by changing the environment variables.
+    |
+    */
+
+    'media_disk' => env('MEDIA_DISK', 'public'),
+
+    'private_media_disk' => env('PRIVATE_MEDIA_DISK', 'local'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

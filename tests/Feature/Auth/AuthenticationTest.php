@@ -18,7 +18,7 @@ test('users can authenticate using the login screen', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('admin.dashboard', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {
@@ -28,6 +28,27 @@ test('users can not authenticate with invalid password', function () {
         'email' => $user->email,
         'password' => 'wrong-password',
     ]);
+
+    $this->assertGuest();
+});
+
+test('deactivated users can not authenticate', function () {
+    $user = User::factory()->inactive()->create();
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+});
+
+test('users deactivated during a session are signed out', function () {
+    $user = User::factory()->inactive()->create();
+
+    $this->actingAs($user)
+        ->get(route('admin.dashboard'))
+        ->assertRedirect(route('login'));
 
     $this->assertGuest();
 });
