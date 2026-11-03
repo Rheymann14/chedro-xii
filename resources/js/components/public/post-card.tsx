@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { CalendarDays, Clock, Newspaper } from 'lucide-react';
+import { CalendarDays, Clock } from 'lucide-react';
+import { PostCoverFallback } from '@/components/public/post-cover-fallback';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, isClosed } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -47,12 +48,7 @@ export function PostCard({
                         className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="grid size-full place-items-center bg-accent">
-                        <Newspaper
-                            className="size-8 text-brand/40 dark:text-primary/40"
-                            aria-hidden
-                        />
-                    </div>
+                    <PostCoverFallback />
                 )}
             </div>
 

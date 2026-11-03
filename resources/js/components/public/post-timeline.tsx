@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
-import { Clock, Newspaper } from 'lucide-react';
+import { Clock } from 'lucide-react';
+import { PostCoverFallback } from '@/components/public/post-cover-fallback';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, isClosed } from '@/lib/format';
 import { show } from '@/routes/posts';
@@ -58,12 +59,7 @@ export function PostTimeline({ posts }: { posts: PostSummary[] }) {
                                         className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                                     />
                                 ) : (
-                                    <div className="grid size-full place-items-center">
-                                        <Newspaper
-                                            className="size-7 text-primary/40"
-                                            aria-hidden
-                                        />
-                                    </div>
+                                    <PostCoverFallback />
                                 )}
                             </div>
                             <div className="min-w-0 flex-1 space-y-1.5">

@@ -153,6 +153,22 @@ test('missing image files are reported and the post is still imported', function
     expect(Post::query()->sole()->images()->count())->toBe(0);
 });
 
+test('running the import again adds images that were missing from an earlier run', function () {
+    $media = Storage::fake(config('filesystems.media_disk'));
+    $root = legacySite(careerposts: [
+        "(7, 'Year-end assessment', NULL, '2024-12-19', NULL, NULL, '[\"career-images\\/late.jpg\"]', NULL, NULL, NULL, 'posting')",
+    ]);
+    $this->artisan('legacy:import', ['dump' => $root.'defaultdb.sql', 'files' => $root])->assertSuccessful();
+    Storage::disk('legacy-source')->put('career-images/late.jpg', UploadedFile::fake()->image('late.jpg', 3000, 2000)->getContent());
+
+    $this->artisan('legacy:import', ['dump' => $root.'defaultdb.sql', 'files' => $root])->assertSuccessful();
+
+    $image = Post::query()->sole()->images()->sole();
+    expect($image->path)->toEndWith('.webp')
+        ->and($image->width)->toBe(2560);
+    $media->assertExists([$image->path, $image->thumbnail_path]);
+});
+
 test('it fails when the dump cannot be read', function () {
     $root = legacySite();
 

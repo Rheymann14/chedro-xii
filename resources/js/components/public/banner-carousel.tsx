@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { SmartLink } from '@/components/public/smart-link';
+import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { show as showPost } from '@/routes/posts';
 import type { BannerSlide, PostSummary } from '@/types';
@@ -24,9 +25,8 @@ type Slide = { key: string } & (
 );
 
 /**
- * Hero carousel in the style of ched.gov.ph: the active slide is centered
- * with its neighbours peeking in dimmed, a caption strip links the current
- * slide, and a pause button sits in the corner. Uploaded banners come first,
+ * Full-width hero carousel: a caption strip links the current slide, and a
+ * pause button sits in the corner. Uploaded banners come first,
  * followed by the main image of each given post, shown whole over a blurred
  * copy since post photos rarely match the banner's shape. Without either,
  * built-in content slides are used.
@@ -118,17 +118,10 @@ export function BannerCarousel({
         <section
             aria-roledescription="carousel"
             aria-label="Featured"
-            className="relative overflow-hidden bg-muted"
+            className="relative overflow-hidden bg-navy"
         >
             <div ref={emblaRef} className="overflow-hidden">
-                {/* Pre-center the 78% slide ((100% - 78%) / 2) so it does not jump once Embla's inline transform takes over. */}
-                <div
-                    className={cn(
-                        'flex',
-                        slides.length > 1 &&
-                            'xl:[transform:translate3d(11%,0,0)]',
-                    )}
-                >
+                <div className="flex">
                     {slides.map((slide, index) => (
                         <div
                             key={slide.key}
@@ -136,56 +129,30 @@ export function BannerCarousel({
                             aria-roledescription="slide"
                             aria-label={`${index + 1} of ${slides.length}`}
                             aria-hidden={index !== selected}
-                            className="relative min-w-0 shrink-0 grow-0 basis-full xl:basis-[78%]"
+                            className="relative min-w-0 shrink-0 grow-0 basis-full"
                         >
-                            {slide.kind === 'image' && slide.contain ? (
-                                <div className="relative aspect-[16/9] w-full overflow-hidden bg-navy sm:aspect-[2.56/1]">
-                                    <img
-                                        src={slide.image_url}
-                                        alt=""
-                                        aria-hidden
-                                        decoding="async"
-                                        className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl"
-                                    />
-                                    <img
-                                        src={slide.image_url}
-                                        alt={slide.alt ?? slide.title}
-                                        loading={index === 0 ? 'eager' : 'lazy'}
-                                        fetchPriority={
-                                            index === 0 ? 'high' : 'auto'
-                                        }
-                                        decoding="async"
-                                        className="relative size-full object-contain"
-                                    />
-                                </div>
-                            ) : slide.kind === 'image' ? (
-                                <img
-                                    src={slide.image_url}
-                                    alt={slide.alt ?? slide.title}
-                                    width={2048}
-                                    height={800}
-                                    loading={index === 0 ? 'eager' : 'lazy'}
-                                    fetchPriority={
-                                        index === 0 ? 'high' : 'auto'
-                                    }
-                                    decoding="async"
-                                    className="aspect-[16/9] w-full object-cover sm:aspect-[2.56/1]"
+                            {slide.kind === 'image' ? (
+                                <ImageSlideView
+                                    slide={slide}
+                                    eager={index === 0}
                                 />
                             ) : (
                                 <ContentSlideView slide={slide} />
                             )}
-                            <div
-                                className={cn(
-                                    'pointer-events-none absolute inset-0 bg-navy/55 transition-opacity duration-500',
-                                    index === selected
-                                        ? 'opacity-0'
-                                        : 'opacity-100',
-                                )}
-                                aria-hidden
-                            />
                         </div>
                     ))}
                 </div>
+            </div>
+
+            {/* Covers the carousel with a spinner until Embla is ready. */}
+            <div
+                className={cn(
+                    'absolute inset-0 z-10 grid place-items-center bg-navy transition-opacity duration-300',
+                    emblaApi ? 'pointer-events-none opacity-0' : 'opacity-100',
+                )}
+                aria-hidden={emblaApi !== undefined}
+            >
+                <Spinner className="size-10 text-white/70" />
             </div>
 
             {slides.length > 1 && (
@@ -256,6 +223,68 @@ export function BannerCarousel({
 }
 
 /**
+ * Banner or post photo with a loader underneath it. The loader sits behind
+ * the image rather than hiding it, so a server-rendered first slide paints
+ * as soon as it downloads, and is removed once the image loads or fails.
+ */
+function ImageSlideView({
+    slide,
+    eager,
+}: {
+    slide: Extract<Slide, { kind: 'image' }>;
+    eager: boolean;
+}) {
+    const [loaded, setLoaded] = useState(false);
+    const markLoaded = () => setLoaded(true);
+    // Images that finished before hydration never fire onLoad.
+    const checkAlreadyLoaded = (image: HTMLImageElement | null) => {
+        if (image?.complete) {
+            setLoaded(true);
+        }
+    };
+
+    const loader = !loaded && (
+        <div className="absolute inset-0 grid place-items-center bg-navy">
+            <Spinner className="size-8 text-white/60" />
+        </div>
+    );
+
+    // Banners fill the frame, but once the height cap kicks in on wide screens they are shown whole over the blurred copy instead of being cropped.
+    return (
+        <div className="relative aspect-[16/9] max-h-[36rem] w-full overflow-hidden bg-navy sm:aspect-[2.56/1]">
+            {loader}
+            <img
+                src={slide.image_url}
+                alt=""
+                aria-hidden
+                loading={eager ? 'eager' : 'lazy'}
+                decoding="async"
+                className={cn(
+                    'absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl',
+                    !slide.contain && 'hidden xl:block',
+                )}
+            />
+            <img
+                ref={checkAlreadyLoaded}
+                src={slide.image_url}
+                alt={slide.alt ?? slide.title}
+                loading={eager ? 'eager' : 'lazy'}
+                fetchPriority={eager ? 'high' : 'auto'}
+                decoding="async"
+                onLoad={markLoaded}
+                onError={markLoaded}
+                className={cn(
+                    'relative size-full',
+                    slide.contain
+                        ? 'object-contain'
+                        : 'object-cover xl:object-contain',
+                )}
+            />
+        </div>
+    );
+}
+
+/**
  * Text slide on a light dotted background, with logos, a headline, a short
  * description, and a large ringed icon on the right.
  */
@@ -263,7 +292,7 @@ function ContentSlideView({ slide }: { slide: ContentSlide }) {
     const Icon = slide.icon;
 
     return (
-        <div className="relative flex min-h-[26rem] w-full items-center bg-surface slide-pattern py-10 sm:aspect-[2.56/1] sm:py-0">
+        <div className="relative flex min-h-[26rem] w-full items-center bg-surface slide-pattern py-10 sm:aspect-[2.56/1] sm:max-h-[36rem] sm:py-0">
             <div className="grid w-full items-center gap-8 px-6 pb-16 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-12 sm:pb-12 lg:px-16">
                 <div className="max-w-2xl space-y-4">
                     <div className="flex items-center gap-3">

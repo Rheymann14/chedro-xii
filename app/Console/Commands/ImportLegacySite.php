@@ -76,6 +76,7 @@ class ImportLegacySite extends Command
         $this->components->twoColumnDetail('Accounts skipped (email already registered)', (string) $users['skipped']);
         $this->components->twoColumnDetail('<fg=green>Posts imported</>', (string) $posts['imported']);
         $this->components->twoColumnDetail('Posts skipped (already imported)', (string) $posts['skipped']);
+        $this->components->twoColumnDetail('<fg=green>Already imported posts given their missing images</>', (string) $posts['backfilled']);
         $this->components->twoColumnDetail('<fg=yellow>Undated posts given the previous post\'s date</>', (string) $posts['dated']);
         $this->components->twoColumnDetail('<fg=green>Images stored</>', (string) $posts['images']);
         $this->components->twoColumnDetail('<fg=green>Videos stored</>', (string) $posts['videos']);
@@ -125,11 +126,11 @@ class ImportLegacySite extends Command
 
     /**
      * @param  list<array<string, string|null>>  $rows
-     * @return array{imported: int, skipped: int, images: int, videos: int, dated: int}
+     * @return array{imported: int, skipped: int, backfilled: int, images: int, videos: int, dated: int}
      */
     private function importPosts(array $rows, string $filesRoot): array
     {
-        $result = ['imported' => 0, 'skipped' => 0, 'images' => 0, 'videos' => 0, 'dated' => 0];
+        $result = ['imported' => 0, 'skipped' => 0, 'backfilled' => 0, 'images' => 0, 'videos' => 0, 'dated' => 0];
         $previousDate = null;
 
         usort($rows, fn (array $first, array $second): int => (int) $first['id'] <=> (int) $second['id']);
@@ -149,14 +150,21 @@ class ImportLegacySite extends Command
                 $this->referencedFiles[$path] = true;
             }
 
-            $alreadyImported = Post::query()
+            $existing = Post::query()
                 ->where('type', $type)
                 ->where('title', $title)
                 ->where('published_at', $publishedAt)
-                ->exists();
+                ->first();
 
-            if ($alreadyImported) {
+            if ($existing !== null) {
                 $result['skipped']++;
+
+                // Images whose files were missing on an earlier run are added once they are available.
+                if ($imagePaths !== [] && $existing->images()->doesntExist()) {
+                    $stored = DB::transaction(fn (): int => $this->storeImages($existing, $imagePaths, $filesRoot));
+                    $result['images'] += $stored;
+                    $result['backfilled'] += $stored > 0 ? 1 : 0;
+                }
 
                 return;
             }
@@ -187,29 +195,10 @@ class ImportLegacySite extends Command
                 $result['dated']++;
             }
 
-            DB::transaction(function () use ($post, $imagePaths, $filesRoot, $title, &$result): void {
+            DB::transaction(function () use ($post, $imagePaths, $filesRoot, &$result): void {
                 $post->save();
 
-                foreach ($imagePaths as $position => $imagePath) {
-                    if (! is_file("{$filesRoot}/{$imagePath}")) {
-                        $this->missingFile($imagePath, $title);
-
-                        continue;
-                    }
-
-                    $stored = Media::storeImage(new File("{$filesRoot}/{$imagePath}"), ['posts/images' => 2560, 'posts/thumbnails' => 800]);
-
-                    $post->images()->create([
-                        'path' => $stored['posts/images']['path'],
-                        'thumbnail_path' => $stored['posts/thumbnails']['path'],
-                        'alt' => $post->title,
-                        'width' => $stored['posts/images']['width'],
-                        'height' => $stored['posts/images']['height'],
-                        'sort_order' => $position,
-                    ]);
-
-                    $result['images']++;
-                }
+                $result['images'] += $this->storeImages($post, $imagePaths, $filesRoot);
             });
 
             $result['imported']++;
@@ -218,6 +207,40 @@ class ImportLegacySite extends Command
         $this->newLine();
 
         return $result;
+    }
+
+    /**
+     * Optimize the post's legacy images onto the media disk, reporting any
+     * that are missing from the files folder, and return how many were stored.
+     *
+     * @param  list<string>  $imagePaths
+     */
+    private function storeImages(Post $post, array $imagePaths, string $filesRoot): int
+    {
+        $count = 0;
+
+        foreach ($imagePaths as $position => $imagePath) {
+            if (! is_file("{$filesRoot}/{$imagePath}")) {
+                $this->missingFile($imagePath, $post->title);
+
+                continue;
+            }
+
+            $stored = Media::storeImage(new File("{$filesRoot}/{$imagePath}"), ['posts/images' => 2560, 'posts/thumbnails' => 800]);
+
+            $post->images()->create([
+                'path' => $stored['posts/images']['path'],
+                'thumbnail_path' => $stored['posts/thumbnails']['path'],
+                'alt' => $post->title,
+                'width' => $stored['posts/images']['width'],
+                'height' => $stored['posts/images']['height'],
+                'sort_order' => $position,
+            ]);
+
+            $count++;
+        }
+
+        return $count;
     }
 
     /**

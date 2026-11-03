@@ -16,10 +16,15 @@ export function SafeHtml({
         return null;
     }
 
+    const withLazyImages = html.replace(
+        /<img\b(?![^>]*\bloading=)/gi,
+        '<img loading="lazy" decoding="async"',
+    );
+
     const clean =
         typeof window === 'undefined'
-            ? html
-            : DOMPurify.sanitize(html, { ADD_ATTR: ['target'] });
+            ? withLazyImages
+            : DOMPurify.sanitize(withLazyImages, { ADD_ATTR: ['target'] });
 
     return (
         <div
