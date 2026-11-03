@@ -1,7 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { FormActions } from '@/components/admin/form-actions';
-import { FormField, NativeSelect } from '@/components/admin/form-field';
+import { FormField } from '@/components/admin/form-field';
+import { Combobox } from '@/components/combobox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import downloadCategories from '@/routes/admin/download-categories';
@@ -65,24 +66,20 @@ export default function DownloadForm({ download, categories }: Props) {
                                         </Link>
                                     }
                                 >
-                                    <NativeSelect
+                                    <Combobox
                                         id="download_category_id"
                                         name="download_category_id"
                                         defaultValue={
                                             download?.download_category_id ??
                                             categories[0]?.id
                                         }
-                                        required
-                                    >
-                                        {categories.map((category) => (
-                                            <option
-                                                key={category.id}
-                                                value={category.id}
-                                            >
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </NativeSelect>
+                                        options={categories.map((category) => ({
+                                            value: String(category.id),
+                                            label: category.name,
+                                        }))}
+                                        placeholder="Select a category"
+                                        searchPlaceholder="Search categories…"
+                                    />
                                 </FormField>
                                 <FormField
                                     label="Order"

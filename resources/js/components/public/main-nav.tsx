@@ -61,6 +61,17 @@ export function MainNav() {
 const navItemClass =
     'h-14 rounded-none bg-transparent px-3 text-[0.8rem] font-semibold tracking-wide text-foreground uppercase hover:bg-transparent hover:text-primary focus:bg-transparent data-[active=true]:bg-transparent data-[active=true]:text-primary data-[active=true]:shadow-[inset_0_-3px_0_var(--flag-red)] data-[state=open]:bg-transparent data-[state=open]:text-primary xl:px-3.5';
 
+/**
+ * Radix opens and closes dropdowns on hover; cancelling its pointer handlers
+ * leaves click, keyboard, and click-outside as the only ways to toggle them.
+ */
+const preventHover = (event: React.PointerEvent) => event.preventDefault();
+
+const clickOnlyHandlers = {
+    trigger: { onPointerMove: preventHover, onPointerLeave: preventHover },
+    content: { onPointerEnter: preventHover, onPointerLeave: preventHover },
+};
+
 function useIsActive() {
     const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
@@ -93,10 +104,13 @@ function DesktopMenu({ items }: { items: MenuLink[] }) {
                                 <NavigationMenuTrigger
                                     data-active={isActive(item)}
                                     className={navItemClass}
+                                    {...clickOnlyHandlers.trigger}
                                 >
                                     {item.label}
                                 </NavigationMenuTrigger>
-                                <NavigationMenuContent>
+                                <NavigationMenuContent
+                                    {...clickOnlyHandlers.content}
+                                >
                                     <ul className="grid w-72 gap-0.5 p-1.5">
                                         {item.children.map((child) => (
                                             <li key={child.id}>

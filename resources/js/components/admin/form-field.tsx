@@ -73,21 +73,3 @@ export function CheckboxField({
         </label>
     );
 }
-
-/**
- * Styled native select that submits with plain forms.
- */
-export function NativeSelect({
-    className,
-    ...props
-}: React.ComponentProps<'select'>) {
-    return (
-        <select
-            className={cn(
-                'h-9 w-full rounded-md border border-input bg-transparent px-3 text-base shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive md:text-sm dark:bg-input/30',
-                className,
-            )}
-            {...props}
-        />
-    );
-}

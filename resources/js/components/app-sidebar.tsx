@@ -5,7 +5,6 @@ import {
     FolderOpen,
     Globe,
     Images,
-    Inbox,
     LayoutGrid,
     ListTree,
     Newspaper,
@@ -35,7 +34,6 @@ import downloads from '@/routes/admin/downloads';
 import issuanceTypes from '@/routes/admin/issuance-types';
 import issuances from '@/routes/admin/issuances';
 import menuItems from '@/routes/admin/menu-items';
-import messages from '@/routes/admin/messages';
 import pages from '@/routes/admin/pages';
 import posts from '@/routes/admin/posts';
 import settings from '@/routes/admin/settings';
@@ -58,7 +56,6 @@ const contentNavItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
-    { title: 'Messages', href: messages.index(), icon: Inbox },
     { title: 'Menus', href: menuItems.index(), icon: ListTree },
     { title: 'Users', href: users.index(), icon: Users },
     { title: 'Office Information', href: settings.edit(), icon: Settings },

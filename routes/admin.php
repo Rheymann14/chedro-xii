@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Admin\BannerController;
-use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DownloadCategoryController;
 use App\Http\Controllers\Admin\DownloadController;
@@ -28,9 +27,6 @@ Route::middleware(['auth', 'can:manage-content'])->prefix('admin')->name('admin.
     Route::middleware('can:administer')->group(function () {
         Route::resource('menu-items', MenuItemController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::post('menu-items/{menu_item}/move', [MenuItemController::class, 'move'])->name('menu-items.move');
-
-        Route::resource('messages', ContactMessageController::class)->only(['index', 'show', 'destroy'])
-            ->parameters(['messages' => 'contactMessage']);
 
         Route::resource('users', UserController::class)->except('show');
 

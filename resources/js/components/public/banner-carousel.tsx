@@ -87,7 +87,14 @@ export function BannerCarousel({
             className="relative overflow-hidden bg-muted"
         >
             <div ref={emblaRef} className="overflow-hidden">
-                <div className="flex">
+                {/* Pre-center the 78% slide ((100% - 78%) / 2) so it does not jump once Embla's inline transform takes over. */}
+                <div
+                    className={cn(
+                        'flex',
+                        slides.length > 1 &&
+                            'xl:[transform:translate3d(11%,0,0)]',
+                    )}
+                >
                     {slides.map((slide, index) => (
                         <div
                             key={`${slide.kind}-${slide.id}`}
@@ -207,18 +214,18 @@ function ContentSlideView({ slide }: { slide: ContentSlide }) {
                 <div className="max-w-2xl space-y-4">
                     <div className="flex items-center gap-3">
                         <img
-                            src="/images/ched-seal.webp"
+                            src="/images/ched-seal-sm.webp"
                             alt=""
-                            width={162}
-                            height={160}
-                            className="size-11 rounded-full sm:size-14"
+                            width={224}
+                            height={224}
+                            className="size-11 sm:size-14"
                         />
                         <img
-                            src="/images/bagong-pilipinas.webp"
+                            src="/images/bagong-pilipinas-emblem.webp"
                             alt=""
-                            width={256}
-                            height={239}
-                            className="h-11 w-auto sm:h-14"
+                            width={224}
+                            height={224}
+                            className="size-11 sm:size-14"
                         />
                     </div>
                     <h2 className="text-3xl leading-tight font-extrabold tracking-tight text-foreground sm:text-5xl">

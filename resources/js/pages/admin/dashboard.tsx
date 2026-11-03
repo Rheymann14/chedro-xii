@@ -6,7 +6,6 @@ import {
     FileText,
     FolderOpen,
     Images,
-    Inbox,
     Newspaper,
     Plus,
 } from 'lucide-react';
@@ -18,7 +17,6 @@ import { dashboard } from '@/routes/admin';
 import banners from '@/routes/admin/banners';
 import downloads from '@/routes/admin/downloads';
 import issuances from '@/routes/admin/issuances';
-import messages from '@/routes/admin/messages';
 import posts from '@/routes/admin/posts';
 
 type Props = {
@@ -29,7 +27,6 @@ type Props = {
         issuances: number;
         downloads: number;
         active_banners: number;
-        unread_messages: number | null;
     };
     recentPosts: {
         id: number;
@@ -84,15 +81,6 @@ export default function Dashboard({ stats, recentPosts }: Props) {
             href: banners.index.url(),
         },
     ];
-
-    if (stats.unread_messages !== null) {
-        tiles.push({
-            label: 'Unread messages',
-            value: stats.unread_messages,
-            icon: Inbox,
-            href: messages.index.url({ query: { status: 'unread' } }),
-        });
-    }
 
     return (
         <>

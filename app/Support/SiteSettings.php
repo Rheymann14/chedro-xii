@@ -29,14 +29,14 @@ class SiteSettings
     {
         return [
             'office_name' => 'Regional Office XII',
-            'office_address' => 'Regional Center, Brgy. Carpenter Hill, Koronadal City, South Cotabato',
+            'office_address' => ' Prime Regional Government Center, Brgy. Carpenter Hill, Koronadal, Philippines',
             'email' => 'chedro12@ched.gov.ph',
             'phone' => null,
-            'facebook_url' => null,
+            'facebook_url' => 'https://www.facebook.com/profile.php?id=61582453558129',
             'map_url' => null,
             'director_name' => 'Rody P. Garcia, MDM, JD, EdD',
             'director_position' => 'Regional Director',
-            'office_hours' => 'Monday to Friday, 8:00 AM – 5:00 PM',
+            'office_hours' => 'Monday to Thursday, 8:00 AM – 7:00 PM',
         ];
     }
 

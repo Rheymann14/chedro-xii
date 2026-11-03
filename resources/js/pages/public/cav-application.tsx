@@ -21,8 +21,11 @@ const steps: {
             'Click the “Complete registration” button.',
         ],
         images: [
-            { src: '/images/cav/img1.png', alt: 'eCAV home page' },
-            { src: '/images/cav/img2.png', alt: 'CHED One Touch sign-up form' },
+            { src: '/images/cav/img1.webp', alt: 'eCAV home page' },
+            {
+                src: '/images/cav/img2.webp',
+                alt: 'CHED One Touch sign-up form',
+            },
             {
                 src: '/images/cav/img3.jpg',
                 alt: 'eCAV access and authorization',
@@ -39,7 +42,7 @@ const steps: {
             'Review your application before submitting it.',
         ],
         images: [
-            { src: '/images/cav/ecav2.png', alt: 'eCAV new application form' },
+            { src: '/images/cav/ecav2.webp', alt: 'eCAV new application form' },
         ],
     },
     {
@@ -52,7 +55,7 @@ const steps: {
         ],
         images: [
             {
-                src: '/images/cav/pay1.png',
+                src: '/images/cav/pay1.webp',
                 alt: 'Landbank Link.BizPortal payment page',
             },
         ],

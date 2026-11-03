@@ -2,7 +2,7 @@ import { router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { NativeSelect } from '@/components/admin/form-field';
+import { Combobox } from '@/components/combobox';
 import { Input } from '@/components/ui/input';
 
 type SelectFilter = {
@@ -68,22 +68,18 @@ export function ListFilters({
                 </div>
             )}
             {selects.map((select) => (
-                <NativeSelect
+                <Combobox
                     key={select.name}
                     value={select.value}
+                    onValueChange={(value) => visit({ [select.name]: value })}
+                    options={[
+                        { value: '', label: `All ${select.label}` },
+                        ...select.options,
+                    ]}
+                    searchPlaceholder={`Search ${select.label.toLowerCase()}…`}
                     aria-label={select.label}
-                    onChange={(event) =>
-                        visit({ [select.name]: event.target.value })
-                    }
                     className="sm:w-48"
-                >
-                    <option value="">All {select.label}</option>
-                    {select.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </NativeSelect>
+                />
             ))}
         </form>
     );

@@ -16,12 +16,6 @@
                         document.documentElement.classList.add('dark');
                     }
                 }
-
-                try {
-                    if (localStorage.getItem('high-contrast') === '1') {
-                        document.documentElement.classList.add('high-contrast');
-                    }
-                } catch (e) {}
             })();
         </script>
 

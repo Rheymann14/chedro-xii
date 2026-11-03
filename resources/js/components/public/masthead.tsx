@@ -1,7 +1,7 @@
 import { Form, Link, usePage } from '@inertiajs/react';
-import { Contrast, LayoutDashboard, Mail, Phone, Search } from 'lucide-react';
+import { LayoutDashboard, Mail, Phone, Search } from 'lucide-react';
+import { AppearanceToggle } from '@/components/public/appearance-toggle';
 import { PhilippineTime } from '@/components/public/ph-time';
-import { useHighContrast } from '@/hooks/use-high-contrast';
 import { home, search } from '@/routes';
 import { dashboard } from '@/routes/admin';
 
@@ -11,19 +11,26 @@ import { dashboard } from '@/routes/admin';
  */
 export function Masthead() {
     const { auth, site } = usePage().props;
-    const { isHighContrast, toggleHighContrast } = useHighContrast();
 
     return (
         <div className="border-b bg-background">
             <div className="container-page flex items-center justify-between gap-6 py-3">
                 <Link href={home()} className="min-w-0 shrink">
                     <img
-                        src="/images/logo-banner.png"
+                        src="/images/logo-banner.webp"
                         alt="Commission on Higher Education Regional Office XII, Office of the President, Republic of the Philippines"
                         width={698}
                         height={173}
                         fetchPriority="high"
-                        className="h-12 w-auto max-w-full sm:h-16"
+                        className="h-12 w-auto max-w-full sm:h-16 dark:hidden"
+                    />
+                    <img
+                        src="/images/logo-banner-dark.webp"
+                        alt="Commission on Higher Education Regional Office XII, Office of the President, Republic of the Philippines"
+                        width={698}
+                        height={173}
+                        loading="lazy"
+                        className="hidden h-12 w-auto max-w-full sm:h-16 dark:block"
                     />
                 </Link>
 
@@ -43,15 +50,7 @@ export function Masthead() {
                             <Mail className="size-3.5" aria-hidden />
                             {site.settings.email}
                         </a>
-                        <button
-                            type="button"
-                            onClick={toggleHighContrast}
-                            aria-pressed={isHighContrast}
-                            className="inline-flex items-center gap-1.5 hover:text-primary"
-                        >
-                            <Contrast className="size-3.5" aria-hidden />
-                            High contrast
-                        </button>
+                        <AppearanceToggle />
                         {auth.user && (
                             <Link
                                 href={dashboard()}
@@ -107,19 +106,19 @@ export function Masthead() {
                             title="Freedom of Information"
                         >
                             <img
-                                src="/images/fip.png"
+                                src="/images/fip.webp"
                                 alt="Freedom of Information Philippines"
-                                width={225}
-                                height={225}
+                                width={224}
+                                height={224}
                                 className="size-12 rounded-full"
                             />
                         </a>
                         <img
-                            src="/images/bagong-pilipinas.webp"
+                            src="/images/bagong-pilipinas-emblem.webp"
                             alt="Bagong Pilipinas"
-                            width={256}
-                            height={239}
-                            className="h-12 w-auto"
+                            width={224}
+                            height={224}
+                            className="size-12"
                         />
                     </div>
                 </div>

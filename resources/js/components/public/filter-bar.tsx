@@ -2,15 +2,9 @@ import { router } from '@inertiajs/react';
 import { Search, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
+import { Combobox } from '@/components/combobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 
 export type FilterSelect = {
     name: string;
@@ -18,8 +12,6 @@ export type FilterSelect = {
     value: string;
     options: { value: string; label: string }[];
 };
-
-const ALL = '__all__';
 
 /**
  * Search box plus optional select filters that update the query string of
@@ -87,32 +79,24 @@ export function FilterBar({
             </div>
 
             {selects.map((select) => (
-                <Select
+                <Combobox
                     key={select.name}
-                    value={select.value === '' ? ALL : select.value}
+                    value={select.value}
                     onValueChange={(value) =>
                         visit({
                             ...current(),
                             q: term.trim(),
-                            [select.name]: value === ALL ? '' : value,
+                            [select.name]: value,
                         })
                     }
-                >
-                    <SelectTrigger
-                        className="w-full sm:w-48"
-                        aria-label={select.label}
-                    >
-                        <SelectValue placeholder={select.label} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value={ALL}>All {select.label}</SelectItem>
-                        {select.options.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    options={[
+                        { value: '', label: `All ${select.label}` },
+                        ...select.options,
+                    ]}
+                    searchPlaceholder={`Search ${select.label.toLowerCase()}…`}
+                    aria-label={select.label}
+                    className="sm:w-48"
+                />
             ))}
 
             <div className="flex gap-2">

@@ -1,7 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { FormActions } from '@/components/admin/form-actions';
-import { FormField, NativeSelect } from '@/components/admin/form-field';
+import { FormField } from '@/components/admin/form-field';
+import { Combobox } from '@/components/combobox';
 import { Input } from '@/components/ui/input';
 import issuanceTypes from '@/routes/admin/issuance-types';
 import issuances from '@/routes/admin/issuances';
@@ -66,24 +67,20 @@ export default function IssuanceForm({ issuance, types, visibilities }: Props) {
                                         </Link>
                                     }
                                 >
-                                    <NativeSelect
+                                    <Combobox
                                         id="issuance_type_id"
                                         name="issuance_type_id"
                                         defaultValue={
                                             issuance?.issuance_type_id ??
                                             types[0]?.id
                                         }
-                                        required
-                                    >
-                                        {types.map((type) => (
-                                            <option
-                                                key={type.id}
-                                                value={type.id}
-                                            >
-                                                {type.name}
-                                            </option>
-                                        ))}
-                                    </NativeSelect>
+                                        options={types.map((type) => ({
+                                            value: String(type.id),
+                                            label: type.name,
+                                        }))}
+                                        placeholder="Select a type"
+                                        searchPlaceholder="Search types…"
+                                    />
                                 </FormField>
                                 <FormField
                                     label="Reference number"
@@ -125,22 +122,15 @@ export default function IssuanceForm({ issuance, types, visibilities }: Props) {
                                     error={errors.visibility}
                                     required
                                 >
-                                    <NativeSelect
+                                    <Combobox
                                         id="visibility"
                                         name="visibility"
                                         defaultValue={
                                             issuance?.visibility ?? 'public'
                                         }
-                                    >
-                                        {visibilities.map((option) => (
-                                            <option
-                                                key={option.value}
-                                                value={option.value}
-                                            >
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </NativeSelect>
+                                        options={visibilities}
+                                        searchPlaceholder="Search visibility…"
+                                    />
                                 </FormField>
                             </div>
 

@@ -176,43 +176,6 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='2' cy='2' r='1.2' fill='%231b2238' fill-opacity='0.07'/%3E%3C/svg%3E");
 }
 
-/* GWT accessibility: high-contrast mode toggled from the header. */
-.high-contrast {
-    --background: #000000;
-    --foreground: #ffffff;
-    --card: #000000;
-    --card-foreground: #ffffff;
-    --popover: #000000;
-    --popover-foreground: #ffffff;
-    --primary: #ffff00;
-    --primary-foreground: #000000;
-    --secondary: #000000;
-    --secondary-foreground: #ffffff;
-    --muted: #000000;
-    --muted-foreground: #ffffff;
-    --accent: #333333;
-    --accent-foreground: #ffff00;
-    --border: #ffffff;
-    --input: #ffffff;
-    --ring: #ffff00;
-    --brand: #000000;
-    --brand-foreground: #ffff00;
-    --navy: #000000;
-    --navy-foreground: #ffff00;
-    --gold: #ffff00;
-    --gold-foreground: #000000;
-    --flag-red: #ffff00;
-    --surface: #000000;
-}
-
-.high-contrast a {
-    text-decoration: underline;
-}
-
-.high-contrast img {
-    filter: grayscale(1) contrast(1.2);
-}
-
 @layer base {
     * {
         @apply border-border;
@@ -231,8 +194,59 @@
     }
 }
 
+/* Inertia page navigation (view transitions): a quick crossfade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+        animation: none !important;
+    }
+}
+
 /* Typography for sanitized rich-text bodies (posts, pages). */
 @layer components {
+    /* Dot grid that fades out from a soft central glow; used behind the login and error pages. */
+    .dot-spotlight {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .dot-spotlight::before,
+    .dot-spotlight::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .dot-spotlight::before {
+        background-image: radial-gradient(
+            circle,
+            color-mix(in oklab, var(--primary) 30%, transparent) 1.2px,
+            transparent 1.6px
+        );
+        background-size: 22px 22px;
+        mask-image: radial-gradient(
+            ellipse 70% 60% at 50% 45%,
+            #000 10%,
+            transparent 75%
+        );
+    }
+
+    .dot-spotlight::after {
+        background-image: radial-gradient(
+            ellipse 45% 35% at 50% 45%,
+            color-mix(in oklab, var(--primary) 10%, transparent),
+            transparent 70%
+        );
+    }
+
     .prose-content {
         @apply max-w-none text-base leading-7 text-foreground;
     }

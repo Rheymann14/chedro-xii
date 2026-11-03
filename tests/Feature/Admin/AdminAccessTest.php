@@ -35,7 +35,6 @@ test('editors are refused administration pages', function (string $route) {
 })->with([
     'admin.users.index',
     'admin.menu-items.index',
-    'admin.messages.index',
     'admin.settings.edit',
 ]);
 

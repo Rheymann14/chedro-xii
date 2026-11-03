@@ -1,11 +1,8 @@
 import { Form, Head } from '@inertiajs/react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { FormActions } from '@/components/admin/form-actions';
-import {
-    CheckboxField,
-    FormField,
-    NativeSelect,
-} from '@/components/admin/form-field';
+import { CheckboxField, FormField } from '@/components/admin/form-field';
+import { Combobox } from '@/components/combobox';
 import PasswordInput from '@/components/password-input';
 import { Input } from '@/components/ui/input';
 import users from '@/routes/admin/users';
@@ -72,20 +69,13 @@ export default function UserForm({ user, roles }: Props) {
                                 error={errors.role}
                                 required
                             >
-                                <NativeSelect
+                                <Combobox
                                     id="role"
                                     name="role"
                                     defaultValue={user?.role ?? 'editor'}
-                                >
-                                    {roles.map((role) => (
-                                        <option
-                                            key={role.value}
-                                            value={role.value}
-                                        >
-                                            {role.label}
-                                        </option>
-                                    ))}
-                                </NativeSelect>
+                                    options={roles}
+                                    searchPlaceholder="Search roles…"
+                                />
                             </FormField>
                             <CheckboxField
                                 name="is_active"

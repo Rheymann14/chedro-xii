@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { Facebook, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
+import { FacebookIcon } from '@/components/public/facebook-icon';
 import { SmartLink } from '@/components/public/smart-link';
 import { formatDate } from '@/lib/format';
 import type { MenuLink } from '@/types';
@@ -28,20 +29,20 @@ export function SiteFooter() {
                 <div className="container-page flex flex-col items-center justify-center gap-8 py-10 sm:flex-row sm:gap-12">
                     <div className="flex items-center gap-4">
                         <img
-                            src="/images/ched-seal-lg.webp"
+                            src="/images/ched-seal-sm.webp"
                             alt="Commission on Higher Education seal"
-                            width={480}
-                            height={480}
+                            width={224}
+                            height={224}
                             loading="lazy"
                             className="size-24 sm:size-28"
                         />
                         <img
-                            src="/images/bagong-pilipinas.webp"
+                            src="/images/bagong-pilipinas-emblem.webp"
                             alt="Bagong Pilipinas"
-                            width={256}
-                            height={239}
+                            width={224}
+                            height={224}
                             loading="lazy"
-                            className="h-24 w-auto sm:h-28"
+                            className="size-24 sm:size-28"
                         />
                     </div>
                     <div className="text-center sm:text-left">
@@ -78,20 +79,20 @@ export function SiteFooter() {
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
                             <img
-                                src="/images/ched-seal.webp"
+                                src="/images/ched-seal-sm.webp"
                                 alt=""
-                                width={162}
-                                height={160}
+                                width={224}
+                                height={224}
                                 loading="lazy"
-                                className="size-12 rounded-full"
+                                className="size-12"
                             />
                             <img
-                                src="/images/bagong-pilipinas.webp"
+                                src="/images/bagong-pilipinas-emblem.webp"
                                 alt=""
-                                width={256}
-                                height={239}
+                                width={224}
+                                height={224}
                                 loading="lazy"
-                                className="h-12 w-auto"
+                                className="size-12"
                             />
                         </div>
                         <p className="font-semibold text-white">
@@ -140,9 +141,9 @@ export function SiteFooter() {
                             {settings.facebook_url && (
                                 <SocialLink
                                     href={settings.facebook_url}
-                                    label="Facebook"
+                                    label="CHED Rehiyon Dose on Facebook"
                                 >
-                                    <Facebook className="size-4" />
+                                    <FacebookIcon className="size-4" />
                                 </SocialLink>
                             )}
                             <SocialLink
@@ -176,10 +177,10 @@ export function SiteFooter() {
                             Copyright &copy; {new Date().getFullYear()} CHED
                             Regional Office XII. All rights reserved.
                         </p>
-                        <p>
+                        {/* <p>
                             All content is in the public domain unless otherwise
                             stated.
-                        </p>
+                        </p> */}
                     </div>
                 </div>
             </div>

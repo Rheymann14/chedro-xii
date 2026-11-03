@@ -36,13 +36,13 @@ class MenuSeeder extends Seeder
             ]],
             ['Online Services', '/online-services', 'Apply for certifications and access CHED online systems.', [
                 ['CAV Application', '/online-services/cav-application', 'Apply online for Certification, Authentication, and Verification (CAV).'],
-                ['Program Evaluation Self-Assessment', 'https://monitoring.chedro12.com/', 'Submit your program evaluation self-assessment through the official portal.', true],
+                ['Program Evaluation Self-Assessment', 'https://program-assessment.chedro12.com/', 'Submit your program evaluation self-assessment through the official portal.', true],
             ]],
             ['HEMIS', '/hemis', 'Higher Education Management Information System: statistics, institutions, and verification services.', [
                 ['Statistics', '/statistics', 'Higher education statistics, reports, and data insights.'],
                 ['Higher Education Institutions', '/heis', 'Directory of recognized higher education institutions in Region XII.'],
                 ['Curriculum Verification', 'https://curriculum-verification.chedro12.com/', 'Verify that a curriculum meets official CHED standards.', true],
-                ['Check with CHED', 'https://cwc.chedro12.com/', 'Check your records with CHED.', true],
+                ['Check with CHED', 'https://beripika.chedro12.com/', 'Check your records with CHED.', true],
             ]],
             ['Resources', '/resources', 'Issuances, regional memoranda, and downloadable forms.', [
                 ['Regional Memoranda', '/issuances', 'Regional memoranda and advisories.'],

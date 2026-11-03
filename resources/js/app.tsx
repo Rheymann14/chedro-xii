@@ -2,7 +2,6 @@ import { createInertiaApp } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
-import { initializeHighContrast } from '@/hooks/use-high-contrast';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import PublicLayout from '@/layouts/public-layout';
@@ -25,6 +24,21 @@ void createInertiaApp({
         }
     },
     strictMode: true,
+    defaults: {
+        // Animate page-to-page navigation, but not form posts, partial reloads, or query-only changes like filters.
+        visitOptions: (href, options) => {
+            const isPageNavigation =
+                (options.method ?? 'get') === 'get' &&
+                !options.only?.length &&
+                !options.except?.length &&
+                new URL(href, window.location.href).pathname !==
+                    window.location.pathname;
+
+            return {
+                viewTransition: options.viewTransition ?? isPageNavigation,
+            };
+        },
+    },
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>
@@ -38,6 +52,5 @@ void createInertiaApp({
     },
 });
 
-// This will set light / dark mode and high contrast on load...
+// This will set light / dark mode on load...
 initializeTheme();
-initializeHighContrast();

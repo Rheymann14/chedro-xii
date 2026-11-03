@@ -63,7 +63,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Staff (admins and editors) manage public content; only administrators
-     * manage users, menus, site settings, and contact messages.
+     * manage users, menus, and site settings.
      */
     protected function configureAuthorization(): void
     {

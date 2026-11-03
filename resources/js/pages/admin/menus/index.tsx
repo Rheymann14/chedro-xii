@@ -3,11 +3,8 @@ import { ArrowDown, ArrowUp, ExternalLink, Pencil, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { ConfirmDelete } from '@/components/admin/confirm-delete';
-import {
-    CheckboxField,
-    FormField,
-    NativeSelect,
-} from '@/components/admin/form-field';
+import { CheckboxField, FormField } from '@/components/admin/form-field';
+import { Combobox } from '@/components/combobox';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -297,23 +294,23 @@ function MenuItemForm({
                             htmlFor="parent_id"
                             error={errors.parent_id}
                         >
-                            <NativeSelect
+                            <Combobox
                                 id="parent_id"
                                 name="parent_id"
-                                defaultValue={parentId ?? ''}
-                            >
-                                <option value="">— Top level —</option>
-                                {parents
-                                    .filter((parent) => parent.id !== item?.id)
-                                    .map((parent) => (
-                                        <option
-                                            key={parent.id}
-                                            value={parent.id}
-                                        >
-                                            {parent.label}
-                                        </option>
-                                    ))}
-                            </NativeSelect>
+                                defaultValue={parentId}
+                                options={[
+                                    { value: '', label: '— Top level —' },
+                                    ...parents
+                                        .filter(
+                                            (parent) => parent.id !== item?.id,
+                                        )
+                                        .map((parent) => ({
+                                            value: String(parent.id),
+                                            label: parent.label,
+                                        })),
+                                ]}
+                                searchPlaceholder="Search links…"
+                            />
                         </FormField>
                     ) : (
                         <input

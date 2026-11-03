@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Banner;
-use App\Models\ContactMessage;
 use App\Models\Download;
 use App\Models\Issuance;
 use App\Models\Post;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -24,9 +22,7 @@ class DashboardController extends Controller
                 'draft_posts' => Post::query()->whereNull('published_at')->count(),
                 'issuances' => Issuance::query()->count(),
                 'downloads' => Download::query()->count(),
-                'active_banners' => Banner::query()->showing()->count(),
-                'unread_messages' => Gate::allows('administer') ? ContactMessage::query()->unread()->count() : null,
-            ],
+                'active_banners' => Banner::query()->showing()->count(),            ],
             'recentPosts' => Post::query()
                 ->latest('updated_at')
                 ->limit(6)

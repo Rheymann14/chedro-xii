@@ -10,8 +10,9 @@ import {
 import { useState } from 'react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { ConfirmDelete } from '@/components/admin/confirm-delete';
-import { FormField, NativeSelect } from '@/components/admin/form-field';
+import { FormField } from '@/components/admin/form-field';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { Combobox } from '@/components/combobox';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -236,23 +237,14 @@ export default function PostForm({ post, defaultType, types }: Props) {
                                         error={errors.type}
                                         required
                                     >
-                                        <NativeSelect
+                                        <Combobox
                                             id="type"
                                             name="type"
                                             value={type}
-                                            onChange={(event) =>
-                                                setType(event.target.value)
-                                            }
-                                        >
-                                            {types.map((option) => (
-                                                <option
-                                                    key={option.value}
-                                                    value={option.value}
-                                                >
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </NativeSelect>
+                                            onValueChange={setType}
+                                            options={types}
+                                            searchPlaceholder="Search types…"
+                                        />
                                     </FormField>
                                     <FormField
                                         label="Publish date"
