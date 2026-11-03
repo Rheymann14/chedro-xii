@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { SmartLink } from '@/components/public/smart-link';
 import { cn } from '@/lib/utils';
-import type { BannerSlide } from '@/types';
+import { show as showPost } from '@/routes/posts';
+import type { BannerSlide, PostSummary } from '@/types';
 
 export type ContentSlide = {
     id: string;
@@ -17,27 +18,60 @@ export type ContentSlide = {
     icon: LucideIcon;
 };
 
-type Slide =
-    | ({ kind: 'image' } & BannerSlide)
-    | ({ kind: 'content' } & ContentSlide);
+type Slide = { key: string } & (
+    | ({ kind: 'image'; contain: boolean } & BannerSlide)
+    | ({ kind: 'content' } & ContentSlide)
+);
 
 /**
  * Hero carousel in the style of ched.gov.ph: the active slide is centered
  * with its neighbours peeking in dimmed, a caption strip links the current
- * slide, and a pause button sits in the corner. Uploaded banners are shown
- * as images; without banners, built-in content slides are used.
+ * slide, and a pause button sits in the corner. Uploaded banners come first,
+ * followed by the main image of each given post, shown whole over a blurred
+ * copy since post photos rarely match the banner's shape. Without either,
+ * built-in content slides are used.
  */
 export function BannerCarousel({
     banners,
+    posts = [],
     fallback,
 }: {
     banners: BannerSlide[];
+    posts?: PostSummary[];
     fallback: ContentSlide[];
 }) {
+    const imageSlides: Slide[] = [
+        ...banners.map((banner) => ({
+            key: `banner-${banner.id}`,
+            kind: 'image' as const,
+            contain: false,
+            ...banner,
+        })),
+        ...posts.flatMap((post) =>
+            post.cover
+                ? [
+                      {
+                          key: `post-${post.id}`,
+                          kind: 'image' as const,
+                          contain: true,
+                          id: post.id,
+                          title: post.title,
+                          image_url: post.cover.url,
+                          link_url: showPost.url(post.slug),
+                          alt: post.cover.alt,
+                      },
+                  ]
+                : [],
+        ),
+    ];
     const slides: Slide[] =
-        banners.length > 0
-            ? banners.map((banner) => ({ kind: 'image', ...banner }))
-            : fallback.map((slide) => ({ kind: 'content', ...slide }));
+        imageSlides.length > 0
+            ? imageSlides
+            : fallback.map((slide) => ({
+                  key: `content-${slide.id}`,
+                  kind: 'content',
+                  ...slide,
+              }));
 
     const [autoplay] = useState(() =>
         Autoplay({
@@ -97,14 +131,34 @@ export function BannerCarousel({
                 >
                     {slides.map((slide, index) => (
                         <div
-                            key={`${slide.kind}-${slide.id}`}
+                            key={slide.key}
                             role="group"
                             aria-roledescription="slide"
                             aria-label={`${index + 1} of ${slides.length}`}
                             aria-hidden={index !== selected}
                             className="relative min-w-0 shrink-0 grow-0 basis-full xl:basis-[78%]"
                         >
-                            {slide.kind === 'image' ? (
+                            {slide.kind === 'image' && slide.contain ? (
+                                <div className="relative aspect-[16/9] w-full overflow-hidden bg-navy sm:aspect-[2.56/1]">
+                                    <img
+                                        src={slide.image_url}
+                                        alt=""
+                                        aria-hidden
+                                        decoding="async"
+                                        className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-2xl"
+                                    />
+                                    <img
+                                        src={slide.image_url}
+                                        alt={slide.alt ?? slide.title}
+                                        loading={index === 0 ? 'eager' : 'lazy'}
+                                        fetchPriority={
+                                            index === 0 ? 'high' : 'auto'
+                                        }
+                                        decoding="async"
+                                        className="relative size-full object-contain"
+                                    />
+                                </div>
+                            ) : slide.kind === 'image' ? (
                                 <img
                                     src={slide.image_url}
                                     alt={slide.alt ?? slide.title}
@@ -174,7 +228,7 @@ export function BannerCarousel({
                         <div className="hidden gap-1.5 sm:flex">
                             {slides.map((slide, index) => (
                                 <button
-                                    key={`${slide.kind}-${slide.id}`}
+                                    key={slide.key}
                                     type="button"
                                     onClick={() => emblaApi?.scrollTo(index)}
                                     aria-label={`Go to slide ${index + 1}`}

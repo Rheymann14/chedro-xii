@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -45,13 +46,13 @@ class Media
      * @param  array<string, int>  $variants  directory => longest edge in pixels
      * @return array<string, array{path: string, width: int|null, height: int|null}>
      */
-    public static function storeImage(UploadedFile $file, array $variants): array
+    public static function storeImage(File|UploadedFile $file, array $variants): array
     {
         $optimized = ImageOptimizer::optimize($file->getRealPath(), array_values($variants));
 
         if ($optimized === null) {
             [$width, $height] = @getimagesize($file->getRealPath()) ?: [null, null];
-            $path = static::store($file, (string) array_key_first($variants));
+            $path = (string) static::disk()->putFile((string) array_key_first($variants), $file, 'public');
 
             return array_map(fn (): array => ['path' => $path, 'width' => $width, 'height' => $height], $variants);
         }

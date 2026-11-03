@@ -7,12 +7,17 @@ import type { Paginated } from '@/types';
 /**
  * Pagination for Laravel length-aware paginators. Shows a compact
  * previous/next control on phones and page numbers from `sm` upward.
+ *
+ * Pass `only` to reload just those props and keep the scroll position, for a
+ * paginated section inside a larger page.
  */
 export function PaginationNav<T>({
     paginator,
+    only,
     className,
 }: {
     paginator: Paginated<T>;
+    only?: string[];
     className?: string;
 }) {
     const { meta, links } = paginator;
@@ -22,6 +27,7 @@ export function PaginationNav<T>({
     }
 
     const pageLinks = meta.links.slice(1, -1);
+    const visit = only ? { only, preserveScroll: true } : {};
 
     return (
         <nav
@@ -31,7 +37,7 @@ export function PaginationNav<T>({
                 className,
             )}
         >
-            <PageButton href={links.prev} label="Previous page">
+            <PageButton href={links.prev} label="Previous page" visit={visit}>
                 <ChevronLeft className="size-4" aria-hidden />
                 <span>Previous</span>
             </PageButton>
@@ -46,6 +52,7 @@ export function PaginationNav<T>({
                         {link.url ? (
                             <Link
                                 href={link.url}
+                                {...visit}
                                 aria-current={link.active ? 'page' : undefined}
                                 className={cn(
                                     'inline-flex size-9 items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent',
@@ -64,7 +71,7 @@ export function PaginationNav<T>({
                 ))}
             </ul>
 
-            <PageButton href={links.next} label="Next page">
+            <PageButton href={links.next} label="Next page" visit={visit}>
                 <span>Next</span>
                 <ChevronRight className="size-4" aria-hidden />
             </PageButton>
@@ -75,10 +82,12 @@ export function PaginationNav<T>({
 function PageButton({
     href,
     label,
+    visit,
     children,
 }: {
     href: string | null;
     label: string;
+    visit: { only?: string[]; preserveScroll?: boolean };
     children: ReactNode;
 }) {
     const className =
@@ -98,6 +107,7 @@ function PageButton({
     return (
         <Link
             href={href}
+            {...visit}
             aria-label={label}
             className={cn(className, 'hover:bg-accent')}
         >

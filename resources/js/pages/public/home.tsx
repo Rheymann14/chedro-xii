@@ -13,6 +13,7 @@ import { BannerCarousel } from '@/components/public/banner-carousel';
 import type { ContentSlide } from '@/components/public/banner-carousel';
 import { EmptyState } from '@/components/public/empty-state';
 import { IssuanceList } from '@/components/public/issuance-list';
+import { PaginationNav } from '@/components/public/pagination-nav';
 import { PostCalendar } from '@/components/public/post-calendar';
 import { PostTimeline } from '@/components/public/post-timeline';
 import { SectionHeading } from '@/components/public/section-heading';
@@ -26,11 +27,16 @@ import { show as contactShow } from '@/routes/contact';
 import { index as heisIndex } from '@/routes/heis';
 import { show as hubShow } from '@/routes/hubs';
 import { index as issuancesIndex } from '@/routes/issuances';
-import type { BannerSlide, IssuanceItem, PostSummary } from '@/types';
+import type {
+    BannerSlide,
+    IssuanceItem,
+    Paginated,
+    PostSummary,
+} from '@/types';
 
 type Props = {
     banners: BannerSlide[];
-    timeline: PostSummary[];
+    timeline: Paginated<PostSummary>;
     issuances?: IssuanceItem[];
 };
 
@@ -103,7 +109,13 @@ export default function Home({ banners, timeline, issuances }: Props) {
                 />
             </Head>
 
-            <BannerCarousel banners={banners} fallback={fallbackSlides} />
+            {/* Keyed by page so the slideshow restarts with that timeline page's posts. */}
+            <BannerCarousel
+                key={timeline.meta.current_page}
+                banners={banners}
+                posts={timeline.data}
+                fallback={fallbackSlides}
+            />
 
             <section className="border-b bg-background">
                 <div className="container-page grid items-center gap-10 py-14 md:grid-cols-2 lg:py-20">
@@ -172,8 +184,15 @@ export default function Home({ banners, timeline, issuances }: Props) {
                             description="Announcements, career opportunities, and recognitions."
                             href={announcementsIndex()}
                         />
-                        {timeline.length > 0 ? (
-                            <PostTimeline posts={timeline} />
+                        {timeline.data.length > 0 ? (
+                            <>
+                                <PostTimeline posts={timeline.data} />
+                                <PaginationNav
+                                    paginator={timeline}
+                                    only={['timeline']}
+                                    className="mt-6"
+                                />
+                            </>
                         ) : (
                             <EmptyState
                                 title="No updates yet"

@@ -29,9 +29,24 @@ test('the home page timeline lists the latest published posts of every type', fu
 
     $this->get(route('home'))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('timeline', 2)
-            ->where('timeline.0.id', $award->id)
-            ->where('timeline.1.id', $career->id));
+            ->has('timeline.data', 2)
+            ->where('timeline.data.0.id', $award->id)
+            ->where('timeline.data.1.id', $career->id));
+});
+
+test('the home page timeline shows six posts per page', function () {
+    $posts = Post::factory()
+        ->count(7)
+        ->sequence(fn ($sequence) => ['published_at' => now()->subDays($sequence->index + 1)])
+        ->create();
+
+    $this->get(route('home', ['page' => 2]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('timeline.data', 1)
+            ->where('timeline.data.0.id', $posts->last()->id)
+            ->where('timeline.meta.per_page', 6)
+            ->where('timeline.meta.last_page', 2));
 });
 
 test('a hub page lists the children of its main navigation item', function () {

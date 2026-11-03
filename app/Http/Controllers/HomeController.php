@@ -25,8 +25,8 @@ class HomeController extends Controller
                     ->published()
                     ->with('cover')
                     ->latest('published_at')
-                    ->limit(8)
-                    ->get(['id', 'type', 'title', 'slug', 'excerpt', 'position', 'published_at', 'closing_at']),
+                    ->latest('id')
+                    ->paginate(6, ['id', 'type', 'title', 'slug', 'excerpt', 'position', 'published_at', 'closing_at']),
             ),
             'issuances' => Inertia::defer(fn () => IssuanceResource::collection(
                 Issuance::query()

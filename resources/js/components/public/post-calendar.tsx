@@ -1,5 +1,5 @@
 import { Link, useHttp } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { calendar } from '@/routes';
@@ -19,6 +19,15 @@ type CalendarResponse = {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const MONTHS = Array.from({ length: 12 }, (_, month) =>
+    new Intl.DateTimeFormat('en-PH', { month: 'short' }).format(
+        new Date(2000, month, 1),
+    ),
+);
+
+/** Years shown at once in the year picker. */
+const YEARS_PER_PAGE = 12;
+
 const monthLabel = new Intl.DateTimeFormat('en-PH', {
     month: 'long',
     year: 'numeric',
@@ -37,7 +46,8 @@ const toKey = (year: number, month: number, day: number) =>
 
 /**
  * Month calendar that highlights the days with published posts. Selecting a
- * highlighted day lists that day's posts below the grid.
+ * highlighted day lists that day's posts below the grid. The month title opens
+ * a month picker, whose year title opens a year picker, for jumping far back.
  */
 export function PostCalendar() {
     const [cursor, setCursor] = useState<{
@@ -46,6 +56,8 @@ export function PostCalendar() {
     } | null>(null);
     const [selected, setSelected] = useState<string | null>(null);
     const [today, setToday] = useState<string | null>(null);
+    const [view, setView] = useState<'days' | 'months' | 'years'>('days');
+    const [pickerYear, setPickerYear] = useState(0);
     const http = useHttp<Record<string, never>, CalendarResponse>({});
 
     useEffect(() => {
@@ -88,30 +100,100 @@ export function PostCalendar() {
     };
 
     const selectedPosts = selected ? (days[selected] ?? []) : [];
+    const [currentYear, currentMonth] = (today ?? '').split('-').map(Number);
+
+    if (view === 'months') {
+        return (
+            <div className="space-y-4">
+                <PickerHeader
+                    title={String(pickerYear)}
+                    titleLabel="Choose a year"
+                    onTitle={() => setView('years')}
+                    previousLabel="Previous year"
+                    onPrevious={() => setPickerYear(pickerYear - 1)}
+                    nextLabel="Next year"
+                    onNext={() => setPickerYear(pickerYear + 1)}
+                />
+                <div className="grid grid-cols-3 gap-2">
+                    {MONTHS.map((label, month) => (
+                        <PickerOption
+                            key={label}
+                            label={label}
+                            isCurrent={
+                                pickerYear === currentYear &&
+                                month + 1 === currentMonth
+                            }
+                            isSelected={
+                                pickerYear === cursor.year &&
+                                month === cursor.month
+                            }
+                            onClick={() => {
+                                setSelected(null);
+                                setCursor({ year: pickerYear, month });
+                                setView('days');
+                            }}
+                        />
+                    ))}
+                </div>
+                <BackToDays onClick={() => setView('days')} />
+            </div>
+        );
+    }
+
+    if (view === 'years') {
+        const firstYear =
+            Math.floor(pickerYear / YEARS_PER_PAGE) * YEARS_PER_PAGE;
+        const years = Array.from(
+            { length: YEARS_PER_PAGE },
+            (_, offset) => firstYear + offset,
+        );
+
+        return (
+            <div className="space-y-4">
+                <PickerHeader
+                    title={`${firstYear} – ${firstYear + YEARS_PER_PAGE - 1}`}
+                    previousLabel="Earlier years"
+                    onPrevious={() =>
+                        setPickerYear(pickerYear - YEARS_PER_PAGE)
+                    }
+                    nextLabel="Later years"
+                    onNext={() => setPickerYear(pickerYear + YEARS_PER_PAGE)}
+                />
+                <div className="grid grid-cols-3 gap-2">
+                    {years.map((year) => (
+                        <PickerOption
+                            key={year}
+                            label={String(year)}
+                            isCurrent={year === currentYear}
+                            isSelected={year === cursor.year}
+                            onClick={() => {
+                                setPickerYear(year);
+                                setView('months');
+                            }}
+                        />
+                    ))}
+                </div>
+                <BackToDays onClick={() => setView('days')} />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <button
-                    type="button"
-                    onClick={() => move(-1)}
-                    aria-label="Previous month"
-                    className="grid size-8 place-items-center rounded-md hover:bg-accent"
-                >
-                    <ChevronLeft className="size-4" />
-                </button>
-                <p className="font-semibold" aria-live="polite">
-                    {monthLabel.format(new Date(cursor.year, cursor.month, 1))}
-                </p>
-                <button
-                    type="button"
-                    onClick={() => move(1)}
-                    aria-label="Next month"
-                    className="grid size-8 place-items-center rounded-md hover:bg-accent"
-                >
-                    <ChevronRight className="size-4" />
-                </button>
-            </div>
+            <PickerHeader
+                title={monthLabel.format(
+                    new Date(cursor.year, cursor.month, 1),
+                )}
+                titleLabel="Choose a month and year"
+                onTitle={() => {
+                    setPickerYear(cursor.year);
+                    setView('months');
+                }}
+                previousLabel="Previous month"
+                onPrevious={() => move(-1)}
+                nextLabel="Next month"
+                onNext={() => move(1)}
+            />
 
             <div
                 className={cn(
@@ -197,5 +279,107 @@ export function PostCalendar() {
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * Previous/next arrows around a title, which opens the next picker level when
+ * `onTitle` is given.
+ */
+function PickerHeader({
+    title,
+    titleLabel,
+    onTitle,
+    previousLabel,
+    onPrevious,
+    nextLabel,
+    onNext,
+}: {
+    title: string;
+    titleLabel?: string;
+    onTitle?: () => void;
+    previousLabel: string;
+    onPrevious: () => void;
+    nextLabel: string;
+    onNext: () => void;
+}) {
+    return (
+        <div className="flex items-center justify-between">
+            <button
+                type="button"
+                onClick={onPrevious}
+                aria-label={previousLabel}
+                className="grid size-8 place-items-center rounded-md hover:bg-accent"
+            >
+                <ChevronLeft className="size-4" />
+            </button>
+            {onTitle ? (
+                <button
+                    type="button"
+                    onClick={onTitle}
+                    aria-label={`${title}. ${titleLabel}`}
+                    aria-live="polite"
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-semibold hover:bg-accent"
+                >
+                    {title}
+                    <ChevronDown
+                        className="size-4 text-muted-foreground"
+                        aria-hidden
+                    />
+                </button>
+            ) : (
+                <p className="font-semibold" aria-live="polite">
+                    {title}
+                </p>
+            )}
+            <button
+                type="button"
+                onClick={onNext}
+                aria-label={nextLabel}
+                className="grid size-8 place-items-center rounded-md hover:bg-accent"
+            >
+                <ChevronRight className="size-4" />
+            </button>
+        </div>
+    );
+}
+
+function PickerOption({
+    label,
+    isCurrent,
+    isSelected,
+    onClick,
+}: {
+    label: string;
+    isCurrent: boolean;
+    isSelected: boolean;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={isSelected}
+            className={cn(
+                'h-11 rounded-md text-sm font-medium hover:bg-accent',
+                isCurrent && 'ring-1 ring-primary',
+                isSelected &&
+                    'bg-primary text-primary-foreground hover:bg-primary',
+            )}
+        >
+            {label}
+        </button>
+    );
+}
+
+function BackToDays({ onClick }: { onClick: () => void }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="w-full rounded-md border py-2 text-sm font-medium hover:bg-accent"
+        >
+            Back to calendar
+        </button>
     );
 }

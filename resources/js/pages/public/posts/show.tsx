@@ -9,7 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { usePreviousPage } from '@/hooks/use-previous-page';
 import { formatDate, isClosed } from '@/lib/format';
+import { home } from '@/routes';
 import type { PostDetail, PostSummary } from '@/types';
 
 type Props = {
@@ -23,6 +25,7 @@ export default function PostShow({ post, related, listing, isPreview }: Props) {
     const [copiedText, copy] = useClipboard();
     const shareUrl = typeof window === 'undefined' ? '' : window.location.href;
     const description = post.excerpt ?? post.title;
+    const back = backLink(usePreviousPage(), listing);
 
     return (
         <>
@@ -133,11 +136,24 @@ export default function PostShow({ post, related, listing, isPreview }: Props) {
                     </div>
 
                     <Link
-                        href={listing.url}
+                        href={back.href}
+                        onClick={(event) => {
+                            const opensNewTab =
+                                event.button !== 0 ||
+                                event.metaKey ||
+                                event.ctrlKey ||
+                                event.shiftKey ||
+                                event.altKey;
+
+                            if (back.viaHistory && !opensNewTab) {
+                                event.preventDefault();
+                                window.history.back();
+                            }
+                        }}
                         className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
                     >
                         <ArrowLeft className="size-4" aria-hidden />
-                        Back to {listing.label}
+                        {back.label}
                     </Link>
                 </article>
 
@@ -154,4 +170,33 @@ export default function PostShow({ post, related, listing, isPreview }: Props) {
             </div>
         </>
     );
+}
+
+/**
+ * Return to the page the visitor came from, such as page 3 of the home
+ * timeline or a filtered listing, through browser history so its state and
+ * scroll position are restored. Visitors who arrived directly go to the
+ * post type's listing.
+ */
+function backLink(
+    previousPage: string | null,
+    listing: Props['listing'],
+): { href: string; label: string; viaHistory: boolean } {
+    if (previousPage === null) {
+        return {
+            href: listing.url,
+            label: `Back to ${listing.label}`,
+            viaHistory: false,
+        };
+    }
+
+    const previousPath = previousPage.split('?')[0];
+    const label =
+        previousPath === home.url()
+            ? 'Back to Latest Updates'
+            : previousPath === new URL(listing.url).pathname
+              ? `Back to ${listing.label}`
+              : 'Back';
+
+    return { href: previousPage, label, viaHistory: true };
 }
