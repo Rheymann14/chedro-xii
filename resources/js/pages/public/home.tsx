@@ -121,12 +121,12 @@ export default function Home({ banners, timeline, issuances }: Props) {
                 <div className="container-page grid items-center gap-10 py-14 md:grid-cols-2 lg:py-20">
                     <div className="flex justify-center">
                         <img
-                            src="/images/ched-seal-lg.webp"
-                            alt="Commission on Higher Education seal"
-                            width={480}
-                            height={480}
+                            src="/images/building-800.webp"
+                            alt="CHED Regional Office XII building"
+                            width={800}
+                            height={800}
                             loading="lazy"
-                            className="size-56 sm:size-72"
+                            className="aspect-square w-full max-w-sm rounded-2xl object-cover shadow-sm"
                         />
                     </div>
                     <div className="space-y-5">

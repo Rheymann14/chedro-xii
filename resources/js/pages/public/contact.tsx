@@ -66,13 +66,25 @@ export default function Contact() {
                     )}
                 </div>
 
-                <div className="rounded-lg border border-l-4 border-l-gold bg-card p-5 shadow-xs">
-                    <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                        {settings.director_position}
-                    </p>
-                    <p className="mt-1 font-semibold">
-                        {settings.director_name}
-                    </p>
+                <div className="overflow-hidden rounded-lg border bg-card shadow-xs">
+                    <div className="bg-linear-to-b from-slate-50 to-slate-200 pt-6 dark:from-slate-800 dark:to-slate-900">
+                        <img
+                            src="/images/portrait-480.avif"
+                            alt={`Portrait of ${settings.director_name}`}
+                            width={480}
+                            height={708}
+                            loading="lazy"
+                            className="mx-auto h-80 w-auto"
+                        />
+                    </div>
+                    <div className="border-t-4 border-t-gold p-5">
+                        <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                            {settings.director_position}
+                        </p>
+                        <p className="mt-1 font-semibold">
+                            {settings.director_name}
+                        </p>
+                    </div>
                 </div>
             </div>
         </>
