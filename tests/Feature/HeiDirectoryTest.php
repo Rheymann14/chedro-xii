@@ -108,9 +108,28 @@ test('successful portal responses are cached', function () {
 test('the directory can be exported to Excel', function () {
     Http::fake(['portal.test/api/fetch-all-hei' => Http::response([['instName' => 'Cotabato State University']])]);
 
-    $this->get(route('heis.export', 'xlsx'))
+    $response = $this->get(route('heis.export', 'xlsx'))
         ->assertOk()
         ->assertDownload('region-xii-heis-'.now()->format('Y-m-d').'.xlsx');
+
+    $path = tempnam(sys_get_temp_dir(), 'heis');
+    file_put_contents($path, $response->streamedContent());
+
+    $zip = new ZipArchive;
+    $zip->open($path);
+    $sheet = $zip->getFromName('xl/worksheets/sheet1.xml');
+    $styles = $zip->getFromName('xl/styles.xml');
+    $zip->close();
+    unlink($path);
+
+    expect($sheet)
+        ->toContain('Cotabato State University')
+        ->toContain('<autoFilter ref="A1:G2"/>')
+        ->toContain('<col min="2" max="2" width="27"')
+        ->not->toContain('customHeight')
+        ->and($styles)
+        ->toContain('wrapText="1"')
+        ->toContain('<left style="thin"');
 });
 
 test('exports are unavailable while the portal is down', function () {

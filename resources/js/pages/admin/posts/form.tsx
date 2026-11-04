@@ -225,7 +225,7 @@ export default function PostForm({ post, defaultType, types }: Props) {
                                 </section>
                             </div>
 
-                            <aside className="space-y-6">
+                            <aside className="space-y-6 xl:sticky xl:top-4 xl:self-start">
                                 <section className="space-y-4 rounded-xl border p-4">
                                     <h2 className="font-semibold">
                                         Publishing
@@ -278,7 +278,7 @@ export default function PostForm({ post, defaultType, types }: Props) {
                                     )}
                                 </section>
 
-                                <div className="sticky bottom-4 space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+                                <div className="sticky bottom-4 z-10 space-y-3 rounded-xl border bg-card p-4 shadow-sm xl:static">
                                     {progress && (
                                         <progress
                                             value={progress.percentage}
