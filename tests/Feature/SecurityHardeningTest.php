@@ -1,7 +1,51 @@
 <?php
 
+use App\Models\ContactMessage;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
+
+/**
+ * Reloads the trusted proxy configuration as if TRUSTED_PROXIES were set.
+ */
+function trustProxies(string $setting): void
+{
+    $_SERVER['TRUSTED_PROXIES'] = $setting;
+
+    config(['trustedproxy' => require config_path('trustedproxy.php')]);
+
+    unset($_SERVER['TRUSTED_PROXIES']);
+}
+
+/**
+ * Sends a contact message from the given connecting IP, claiming to forward
+ * the visitor at 203.0.113.7.
+ */
+function contactFromProxy(string $connectingIp): ContactMessage
+{
+    test()->withServerVariables(['REMOTE_ADDR' => $connectingIp])
+        ->withHeader('X-Forwarded-For', '203.0.113.7')
+        ->post(route('contact.store'), [
+            'name' => 'Juan dela Cruz',
+            'email' => 'juan@example.com',
+            'subject' => 'CAV requirements',
+            'message' => 'What are the requirements for CAV?',
+        ])
+        ->assertRedirect();
+
+    return ContactMessage::query()->sole();
+}
+
+test('requests through cloudflare record the visitor ip', function () {
+    trustProxies('cloudflare');
+
+    expect(contactFromProxy('162.158.10.20')->ip_address)->toBe('203.0.113.7');
+});
+
+test('forwarded ips from callers outside cloudflare are ignored', function () {
+    trustProxies('cloudflare');
+
+    expect(contactFromProxy('198.51.100.9')->ip_address)->toBe('198.51.100.9');
+});
 
 test('responses carry browser security headers', function () {
     $this->get(route('home'))
