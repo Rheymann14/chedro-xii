@@ -22,6 +22,8 @@ use Illuminate\Support\Facades\DB;
  * @property bool $is_active
  * @property Carbon|null $email_verified_at
  * @property string $password
+ * @property bool $has_temporary_password
+ * @property Carbon|null $password_changed_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -39,6 +41,7 @@ class User extends Authenticatable
     protected $attributes = [
         'role' => 'editor',
         'is_active' => true,
+        'has_temporary_password' => false,
     ];
 
     /**
@@ -53,7 +56,32 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'is_active' => 'boolean',
+            'has_temporary_password' => 'boolean',
+            'password_changed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Set a password chosen by an administrator, which the user should replace.
+     */
+    public function setTemporaryPassword(string $password): void
+    {
+        $this->forceFill([
+            'password' => $password,
+            'has_temporary_password' => true,
+        ])->save();
+    }
+
+    /**
+     * Set a password the user chose themselves.
+     */
+    public function setOwnPassword(string $password): void
+    {
+        $this->forceFill([
+            'password' => $password,
+            'has_temporary_password' => false,
+            'password_changed_at' => now(),
+        ])->save();
     }
 
     public function isAdmin(): bool
@@ -85,6 +113,21 @@ class User extends Authenticatable
             ->where('user_id', $this->getKey())
             ->where('last_activity', '>=', now()->subMinutes((int) config('session.lifetime'))->getTimestamp())
             ->exists();
+    }
+
+    /**
+     * Sign this user out of every device (database session driver only).
+     */
+    public function endSessions(): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        DB::connection(config('session.connection'))
+            ->table(config('session.table', 'sessions'))
+            ->where('user_id', $this->getKey())
+            ->delete();
     }
 
     /**

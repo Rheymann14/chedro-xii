@@ -29,6 +29,7 @@ Route::middleware(['auth', 'can:manage-content'])->prefix('admin')->name('admin.
         Route::post('menu-items/{menu_item}/move', [MenuItemController::class, 'move'])->name('menu-items.move');
 
         Route::resource('users', UserController::class)->except('show');
+        Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 
         Route::get('settings', [SiteSettingController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SiteSettingController::class, 'update'])->name('settings.update');

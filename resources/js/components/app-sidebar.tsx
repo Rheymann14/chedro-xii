@@ -3,6 +3,7 @@ import {
     Building2,
     FileText,
     FolderOpen,
+    FolderTree,
     Globe,
     Images,
     LayoutGrid,
@@ -40,17 +41,23 @@ import settings from '@/routes/admin/settings';
 import users from '@/routes/admin/users';
 import type { NavItem } from '@/types';
 
-const contentNavItems: NavItem[] = [
+const overviewNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid, exact: true },
-    { title: 'Posts', href: posts.index(), icon: Newspaper },
-    { title: 'Regional Memoranda', href: issuances.index(), icon: FileText },
+];
+
+const setupNavItems: NavItem[] = [
     { title: 'Issuance Types', href: issuanceTypes.index(), icon: Tags },
-    { title: 'Downloads', href: downloads.index(), icon: FolderOpen },
     {
         title: 'Download Categories',
         href: downloadCategories.index(),
-        icon: Tags,
+        icon: FolderTree,
     },
+];
+
+const contentNavItems: NavItem[] = [
+    { title: 'Posts', href: posts.index(), icon: Newspaper },
+    { title: 'Regional Memoranda', href: issuances.index(), icon: FileText },
+    { title: 'Downloads', href: downloads.index(), icon: FolderOpen },
     { title: 'Home Banners', href: banners.index(), icon: Images },
     { title: 'Pages', href: pages.index(), icon: NotebookText },
 ];
@@ -88,6 +95,8 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
+                <NavMain items={overviewNavItems} label="Overview" />
+                <NavMain items={setupNavItems} label="Setup" />
                 <NavMain items={contentNavItems} label="Content" />
                 {auth.user?.role === 'admin' && (
                     <NavMain items={adminNavItems} label="Administration" />

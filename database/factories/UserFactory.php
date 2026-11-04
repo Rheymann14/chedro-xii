@@ -51,6 +51,16 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user is still using a password an administrator set.
+     */
+    public function temporaryPassword(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'has_temporary_password' => true,
+        ]);
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

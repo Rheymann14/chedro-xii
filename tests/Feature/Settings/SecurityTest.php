@@ -95,3 +95,20 @@ test('correct password must be provided to update password', function () {
         ->assertSessionHasErrors('current_password')
         ->assertRedirect(route('security.edit'));
 });
+
+test('updating their own password clears a temporary password', function () {
+    $this->travelTo('2026-11-04 09:30:00');
+    $user = User::factory()->temporaryPassword()->create();
+
+    $this->actingAs($user)
+        ->put(route('user-password.update'), [
+            'current_password' => 'password',
+            'password' => 'new-password',
+            'password_confirmation' => 'new-password',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($user->refresh())
+        ->has_temporary_password->toBeFalse()
+        ->password_changed_at->toDateTimeString()->toBe('2026-11-04 09:30:00');
+});

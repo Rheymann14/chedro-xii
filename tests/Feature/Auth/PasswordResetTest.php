@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -75,4 +76,19 @@ test('password cannot be reset with invalid token', function () {
     ]);
 
     $response->assertSessionHasErrors('email');
+});
+
+test('resetting a forgotten password clears a temporary password', function () {
+    $user = User::factory()->temporaryPassword()->create();
+
+    $this->post(route('password.update'), [
+        'token' => Password::createToken($user),
+        'email' => $user->email,
+        'password' => 'new-password',
+        'password_confirmation' => 'new-password',
+    ])->assertSessionHasNoErrors();
+
+    expect($user->refresh())
+        ->has_temporary_password->toBeFalse()
+        ->password_changed_at->not->toBeNull();
 });
