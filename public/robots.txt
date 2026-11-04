@@ -1,2 +1,6 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /settings
+Disallow: /login
+Disallow: /search
+Disallow: /heis/export/

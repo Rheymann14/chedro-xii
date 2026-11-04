@@ -16,40 +16,42 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('home');
+Route::middleware('throttle:public')->group(function () {
+    Route::get('/', HomeController::class)->name('home');
 
-Route::get('announcements', [PostController::class, 'index'])->defaults('type', PostType::Announcement->value)->name('announcements.index');
-Route::get('careers', [PostController::class, 'index'])->defaults('type', PostType::Career->value)->name('careers.index');
-Route::get('awards', [PostController::class, 'index'])->defaults('type', PostType::Award->value)->name('awards.index');
-Route::get('posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');
+    Route::get('announcements', [PostController::class, 'index'])->defaults('type', PostType::Announcement->value)->name('announcements.index');
+    Route::get('careers', [PostController::class, 'index'])->defaults('type', PostType::Career->value)->name('careers.index');
+    Route::get('awards', [PostController::class, 'index'])->defaults('type', PostType::Award->value)->name('awards.index');
+    Route::get('posts/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 
-Route::get('issuances', [IssuanceController::class, 'index'])->name('issuances.index');
-Route::get('issuances/{issuance}/file', IssuanceFileController::class)->name('issuances.file');
+    Route::get('issuances', [IssuanceController::class, 'index'])->name('issuances.index');
+    Route::get('issuances/{issuance}/file', IssuanceFileController::class)->name('issuances.file');
 
-Route::get('downloads', [DownloadController::class, 'index'])->name('downloads.index');
+    Route::get('downloads', [DownloadController::class, 'index'])->name('downloads.index');
 
-Route::get('heis', [HeiController::class, 'index'])->name('heis.index');
-Route::get('heis/export/{format}', [HeiController::class, 'export'])
-    ->whereIn('format', ['pdf', 'xlsx'])
-    ->middleware('throttle:exports')
-    ->name('heis.export');
+    Route::get('heis', [HeiController::class, 'index'])->name('heis.index');
+    Route::get('heis/export/{format}', [HeiController::class, 'export'])
+        ->whereIn('format', ['pdf', 'xlsx'])
+        ->middleware('throttle:exports')
+        ->name('heis.export');
 
-Route::get('{hub}', HubController::class)
-    ->whereIn('hub', ['about', 'online-services', 'hemis', 'resources'])
-    ->name('hubs.show');
+    Route::get('{hub}', HubController::class)
+        ->whereIn('hub', ['about', 'online-services', 'hemis', 'resources'])
+        ->name('hubs.show');
 
-Route::inertia('online-services/cav-application', 'public/cav-application')->name('cav-application');
-Route::inertia('statistics', 'public/statistics')->name('statistics');
+    Route::inertia('online-services/cav-application', 'public/cav-application')->name('cav-application');
+    Route::inertia('statistics', 'public/statistics')->name('statistics');
 
-Route::get('pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
+    Route::get('pages/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
-Route::get('contact', [ContactController::class, 'show'])->name('contact.show');
-Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
+    Route::get('contact', [ContactController::class, 'show'])->name('contact.show');
+    Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:contact')->name('contact.store');
 
-Route::get('calendar', CalendarController::class)->middleware('throttle:60,1')->name('calendar');
-Route::post('page-views', PageViewController::class)->middleware('throttle:60,1')->name('page-views.store');
-Route::get('search', SearchController::class)->name('search');
-Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
+    Route::get('calendar', CalendarController::class)->middleware('throttle:60,1')->name('calendar');
+    Route::post('page-views', PageViewController::class)->middleware('throttle:60,1')->name('page-views.store');
+    Route::get('search', SearchController::class)->middleware('throttle:search')->name('search');
+    Route::get('sitemap.xml', SitemapController::class)->name('sitemap');
+});
 
 Route::get('session/keep-alive', fn () => response()->noContent())->middleware('auth')->name('session.keep-alive');
 
