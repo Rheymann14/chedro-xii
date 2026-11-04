@@ -1,10 +1,16 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { FileText, Search as SearchIcon } from 'lucide-react';
+import {
+    ExternalLink,
+    FileText,
+    Link2,
+    Search as SearchIcon,
+} from 'lucide-react';
 import { EmptyState } from '@/components/public/empty-state';
 import { IssuanceList } from '@/components/public/issuance-list';
 import { PageHeader } from '@/components/public/page-header';
 import { PostCard } from '@/components/public/post-card';
 import { SectionHeading } from '@/components/public/section-heading';
+import { SmartLink } from '@/components/public/smart-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { search } from '@/routes';
@@ -14,6 +20,12 @@ import type { IssuanceItem, PostSummary } from '@/types';
 type Props = {
     q: string;
     results: {
+        links: {
+            label: string;
+            url: string;
+            description: string | null;
+            opens_in_new_tab: boolean;
+        }[];
         posts: PostSummary[];
         issuances: IssuanceItem[];
         pages: {
@@ -26,7 +38,10 @@ type Props = {
 
 export default function Search({ q, results }: Props) {
     const total = results
-        ? results.posts.length + results.issuances.length + results.pages.length
+        ? results.links.length +
+          results.posts.length +
+          results.issuances.length +
+          results.pages.length
         : 0;
 
     return (
@@ -74,10 +89,38 @@ export default function Search({ q, results }: Props) {
                     />
                 )}
 
-                {results && results.pages.length > 0 && (
+                {results && results.links.length + results.pages.length > 0 && (
                     <section>
                         <SectionHeading title="Pages" />
                         <ul className="grid gap-3 sm:grid-cols-2">
+                            {results.links.map((link) => (
+                                <li key={link.url}>
+                                    <SmartLink
+                                        href={link.url}
+                                        newTab={link.opens_in_new_tab}
+                                        className="block h-full rounded-lg border bg-card p-4 shadow-xs hover:border-primary/40"
+                                    >
+                                        <span className="flex items-center gap-2 font-semibold">
+                                            <Link2
+                                                className="size-4 text-brand dark:text-primary"
+                                                aria-hidden
+                                            />
+                                            {link.label}
+                                            {link.opens_in_new_tab && (
+                                                <ExternalLink
+                                                    className="size-3.5 text-muted-foreground"
+                                                    aria-label="opens in a new tab"
+                                                />
+                                            )}
+                                        </span>
+                                        {link.description && (
+                                            <span className="mt-1 line-clamp-2 block text-sm text-muted-foreground">
+                                                {link.description}
+                                            </span>
+                                        )}
+                                    </SmartLink>
+                                </li>
+                            ))}
                             {results.pages.map((page) => (
                                 <li key={page.slug}>
                                     <Link

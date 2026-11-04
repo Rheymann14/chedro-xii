@@ -117,7 +117,7 @@ export default function Home({ banners, timeline, issuances }: Props) {
                 fallback={fallbackSlides}
             />
 
-            <section className="border-b bg-background">
+            <section className="dot-center border-b bg-background">
                 <div className="container-page grid items-center gap-10 py-14 md:grid-cols-2 lg:py-20">
                     <div className="flex justify-center">
                         <img

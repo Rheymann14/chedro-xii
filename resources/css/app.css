@@ -247,6 +247,49 @@
         );
     }
 
+    /* Faint 16px dot grid in the primary color, strongest at the left edge and fading out to the right. */
+    .dot-center {
+        position: relative;
+        isolation: isolate;
+    }
+
+    .dot-center::before,
+    .dot-center::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .dot-center::before {
+        background-image: radial-gradient(
+            circle,
+            color-mix(in oklab, var(--primary) 11%, transparent) 1px,
+            transparent 1.5px
+        );
+        background-size: 16px 16px;
+        mask-image: linear-gradient(to right, #000 10%, transparent 85%);
+    }
+
+    .dot-center::after {
+        background-image:
+            radial-gradient(
+                circle,
+                color-mix(in oklab, var(--primary) 12%, transparent) 1px,
+                transparent 1.5px
+            ),
+            radial-gradient(
+                ellipse at 0% 50%,
+                color-mix(in oklab, var(--primary) 5%, transparent),
+                transparent 70%
+            );
+        background-size:
+            16px 16px,
+            100% 100%;
+        mask-image: linear-gradient(to right, #000, transparent 50%);
+    }
+
     .prose-content {
         @apply max-w-none text-base leading-7 text-foreground;
     }
